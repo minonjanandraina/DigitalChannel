@@ -37,11 +37,7 @@ if not DEBUG and SECRET_KEY == "development-only-change-me":
 configured_hosts = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").strip()
 if not DEBUG and not configured_hosts:
     raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must be set when DEBUG is disabled.")
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in configured_hosts.split(",")
-    if host.strip()
-]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1','192.168.123.97']
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
     for origin in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
