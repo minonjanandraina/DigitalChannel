@@ -1,0 +1,19 @@
+{% extends "accounts/base.html" %}
+{% block title %}Accueil | PAMF / MVOLA{% endblock %}
+{% block content %}
+<section class="auth-panel">
+    <p class="small text-muted-debian mb-2">RAPPROCHEMENT WTB</p>
+    <h1 class="h3 mb-3">Bienvenue, {{ user.username }}</h1>
+    <p class="text-muted-debian">Votre compte est confirmé.</p>
+    <h2 class="h6 mt-4">Rôles attribués</h2>
+    <ul class="mb-0">
+        {% for role_name in role_names %}<li>{{ role_name }}</li>{% empty %}<li>Aucun rôle attribué</li>{% endfor %}
+    </ul>
+    {% if perms.auth.import_mvola_report %}
+        <a class="btn btn-debian mt-4" href="{% url 'mvola:import' %}">Importer un rapport MVOLA</a>
+    {% endif %}
+    {% if perms.auth.view_reconciliation_results %}
+        <a class="btn btn-outline-secondary mt-4" href="{% url 'mvola:reconciliation_history' %}">Consulter les rapprochements</a>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions PAMF (Orange Money) - interopRapprochement{% endblock %}
+
+{% block content %}
+<h1 class="h4 mb-3">Rapprochement Orange Money</h1>
+{% include "transactions/_om_tabs.html" %}
+
+<div class="card p-3 mb-4">
+    <form hx-get="{% url 'transactions:om_liste_pamf' %}" hx-target="#table-container"
+          hx-push-url="true" hx-trigger="submit, change" class="row g-2 align-items-end">
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">{{ form.date_min.label }}</label>
+            {{ form.date_min }}
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">{{ form.date_max.label }}</label>
+            {{ form.date_max }}
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">{{ form.transid_om.label }}</label>
+            {{ form.transid_om }}
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">{{ form.r_autotransaction_id.label }}</label>
+            {{ form.r_autotransaction_id }}
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">{{ form.is_success.label }}</label>
+            {{ form.is_success }}
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-debian btn-sm">Filtrer</button>
+            <a href="{% url 'transactions:om_liste_pamf' %}" class="btn btn-outline-secondary btn-sm">Reinitialiser</a>
+        </div>
+    </form>
+</div>
+
+<div class="card p-3">
+    <div id="table-container">
+        {% include "transactions/partials/liste_pamf_om_table.html" %}
+    </div>
+</div>
+{% endblock %}

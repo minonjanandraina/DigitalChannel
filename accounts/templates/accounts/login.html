@@ -1,0 +1,15 @@
+{% extends "accounts/base.html" %}
+{% block title %}Connexion | PAMF / MVOLA{% endblock %}
+{% block content %}
+<section class="auth-panel">
+    <p class="small text-muted-debian mb-2">ESPACE SÉCURISÉ</p>
+    <h1 class="h3 mb-4">Connexion</h1>
+    <form method="post">
+        {% csrf_token %}
+        {% include "accounts/_form_fields.html" %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <button class="btn btn-debian w-100" type="submit">Se connecter</button>
+    </form>
+    <p class="small mt-4 mb-0">Pas encore de compte? <a href="{% url 'accounts:register' %}">Inscription libre</a></p>
+</section>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% include "core/_rapport_entete.html" %}
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr><th>TRANSID</th><th>Date</th><th>MSISDN</th><th>Nom</th><th>Montant</th><th>Type</th><th>Etat</th></tr>
+        </thead>
+        <tbody>
+            {% for t in page_obj %}
+            <tr>
+                <td>{{ t.transid_mvola }}</td>
+                <td>{{ t.date_trans }}</td>
+                <td>{{ t.msisdn }}</td>
+                <td>{{ t.nom }}</td>
+                <td>{{ t.amount }}</td>
+                <td>{{ t.type_operation }}</td>
+                <td>{{ t.state }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-muted-debian">Aucune transaction.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include "_pagination.html" %}

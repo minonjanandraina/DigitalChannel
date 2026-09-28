@@ -1,0 +1,23 @@
+{% include "core/_rapport_entete.html" %}
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr><th>TRANSID</th><th>Date</th><th>MSISDN</th><th>Montant</th><th>Service</th><th>Statut</th></tr>
+        </thead>
+        <tbody>
+            {% for t in page_obj %}
+            <tr>
+                <td>{{ t.transid_om }}</td>
+                <td>{{ t.date_trans }}</td>
+                <td>{{ t.msisdn }}</td>
+                <td>{{ t.montant }}</td>
+                <td>{{ t.service }}</td>
+                <td>{{ t.statut }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-muted-debian">Aucune transaction.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include "_pagination.html" %}

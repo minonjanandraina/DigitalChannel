@@ -1,0 +1,6 @@
+Bonjour {{ user.username }},
+
+Confirmez votre adresse email en ouvrant ce lien:
+{{ activation_url }}
+
+Ce lien expire automatiquement. Si vous n'êtes pas à l'origine de cette inscription, ignorez ce message.

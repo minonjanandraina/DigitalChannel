@@ -1,0 +1,26 @@
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="d-flex justify-content-between align-items-center mt-2">
+    <span class="text-muted-debian small">
+        Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+        ({{ page_obj.paginator.count }} resultat{{ page_obj.paginator.count|pluralize }})
+    </span>
+    <div>
+        {% if page_obj.has_previous %}
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                hx-get="{{ request.path }}?{{ querystring }}&page={{ page_obj.previous_page_number }}"
+                hx-target="#table-container" hx-push-url="true">
+            Precedent
+        </button>
+        {% endif %}
+        {% if page_obj.has_next %}
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                hx-get="{{ request.path }}?{{ querystring }}&page={{ page_obj.next_page_number }}"
+                hx-target="#table-container" hx-push-url="true">
+            Suivant
+        </button>
+        {% endif %}
+    </div>
+</nav>
+{% else %}
+<p class="text-muted-debian small mt-2">{{ page_obj.paginator.count }} resultat{{ page_obj.paginator.count|pluralize }}</p>
+{% endif %}

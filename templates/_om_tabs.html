@@ -1,0 +1,31 @@
+<ul class="nav nav-tabs mb-4 flex-nowrap overflow-auto">
+    {% if user.peut_importer_fichier_om %}
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'import' %}active{% endif %}" href="{% url 'transactions:om_import' %}">
+            Import Orange Money
+        </a>
+    </li>
+    {% endif %}
+    {% if user.peut_lancer_rapprochement or user.peut_consulter_rapprochement %}
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'rapprochement' %}active{% endif %}" href="{% url 'transactions:om_rapprochement' %}">
+            Rapprochement
+        </a>
+    </li>
+    {% endif %}
+    <li class="nav-item">
+        <a class="nav-link text-nowrap {% if active_tab == 'liste_om' %}active{% endif %}" href="{% url 'transactions:om_liste_transactions' %}">
+            Transactions Orange Money
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-nowrap {% if active_tab == 'liste_pamf' %}active{% endif %}" href="{% url 'transactions:om_liste_pamf' %}">
+            Transactions PAMF
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'ecarts' %}active{% endif %}" href="{% url 'ecarts:om_liste' %}">
+            Ecarts
+        </a>
+    </li>
+</ul>

@@ -1,0 +1,144 @@
+:root {
+    --debian-red: #a81d33;
+    --debian-red-dark: #7e1626;
+    --bg: #f5f5f4;
+    --surface: #ffffff;
+    --border: #dcdad5;
+    --text: #23211f;
+    --text-muted: #6b6862;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", "Roboto Mono", Menlo, Consolas, monospace;
+}
+
+.navbar-debian {
+    background-color: var(--surface);
+    border-bottom: 3px solid var(--debian-red);
+}
+
+.navbar-debian .navbar-brand,
+.brand-mark {
+    color: var(--debian-red);
+    font-weight: 700;
+}
+
+.btn-debian {
+    background-color: var(--debian-red);
+    border-color: var(--debian-red);
+    color: #fff;
+}
+
+.btn-debian:hover,
+.btn-debian:focus-visible {
+    background-color: var(--debian-red-dark);
+    border-color: var(--debian-red-dark);
+    color: #fff;
+}
+
+.reports-table tbody tr > * {
+    transition: background-color 0.15s ease-in-out;
+}
+
+.reports-table tbody tr.row-hover > *,
+.reports-table tbody tr:has([data-reconciliation-form]:hover) > * {
+    --bs-table-bg: rgba(168, 29, 51, 0.08);
+    background-color: rgba(168, 29, 51, 0.08);
+}
+
+.auth-shell {
+    width: min(100% - 2rem, 440px);
+    margin: clamp(2rem, 8vh, 5rem) auto;
+}
+
+.topbar {
+    min-height: 68px;
+    background-color: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.app-layout {
+    display: flex;
+    min-height: calc(100vh - 68px);
+}
+
+.app-sidebar {
+    flex: 0 0 248px;
+    width: 248px;
+    padding: 1.5rem 1rem;
+    background-color: var(--surface);
+    border-right: 1px solid var(--border);
+}
+
+.app-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: clamp(1rem, 3vw, 2.5rem);
+}
+
+.app-mobile-sidebar {
+    width: min(84vw, 320px) !important;
+    background-color: var(--surface);
+}
+
+.sidebar-section-title {
+    margin: 0 0 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.sidebar-link {
+    display: block;
+    padding: 0.65rem 0.75rem;
+    border-left: 3px solid transparent;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.sidebar-link:hover {
+    background-color: var(--bg);
+    color: var(--debian-red);
+}
+
+.sidebar-link.active {
+    border-left-color: var(--debian-red);
+    background-color: #f8eeee;
+    color: var(--debian-red-dark);
+    font-weight: 700;
+}
+
+.auth-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--debian-red);
+    padding: clamp(1.25rem, 5vw, 2rem);
+}
+
+.form-control:focus {
+    border-color: var(--debian-red);
+    box-shadow: 0 0 0 0.2rem rgb(168 29 51 / 15%);
+}
+
+.text-muted-debian {
+    color: var(--text-muted);
+}
+
+.modal-2x {
+    max-width: min(96vw, 1600px);
+}
+
+.transaction-panel {
+    height: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--debian-red);
+    padding: 1rem;
+}
+
+.transaction-panel--pamf {
+    border-top-color: var(--text-muted);
+}

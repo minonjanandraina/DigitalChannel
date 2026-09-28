@@ -1,0 +1,5 @@
+-r requirements.txt
+pandas>=2.3,<3
+pyodbc>=5.2,<6
+SQLAlchemy>=2.0,<3
+psycopg2-binary>=2.9,<3

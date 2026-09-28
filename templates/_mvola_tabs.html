@@ -1,0 +1,31 @@
+<ul class="nav nav-tabs mb-4 flex-nowrap overflow-auto">
+    {% if user.peut_importer_csv_mvola %}
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'import' %}active{% endif %}" href="{% url 'transactions:mvola_import' %}">
+            Import MVOLA
+        </a>
+    </li>
+    {% endif %}
+    {% if user.peut_lancer_rapprochement or user.peut_consulter_rapprochement %}
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'rapprochement' %}active{% endif %}" href="{% url 'transactions:mvola_rapprochement' %}">
+            Rapprochement
+        </a>
+    </li>
+    {% endif %}
+    <li class="nav-item">
+        <a class="nav-link text-nowrap {% if active_tab == 'liste_mvola' %}active{% endif %}" href="{% url 'transactions:mvola_liste_transactions' %}">
+            Transactions MVOLA
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-nowrap {% if active_tab == 'liste_pamf' %}active{% endif %}" href="{% url 'transactions:mvola_liste_pamf' %}">
+            Transactions PAMF
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'ecarts' %}active{% endif %}" href="{% url 'ecarts:mvola_liste' %}">
+            Ecarts
+        </a>
+    </li>
+</ul>

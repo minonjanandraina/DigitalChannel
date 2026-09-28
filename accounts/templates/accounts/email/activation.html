@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="fr">
+<body style="margin:0;padding:32px 16px;background:#f5f5f4;color:#23211f;font-family:Arial,sans-serif;">
+<main style="max-width:520px;margin:auto;padding:28px;background:#fff;border:1px solid #dcdad5;border-top:4px solid #a81d33;">
+    <p style="font-size:12px;color:#6b6862;">PAMF / MVOLA</p>
+    <h1 style="font-size:22px;">Confirmez votre adresse email</h1>
+    <p>Bonjour {{ user.username }},</p>
+    <p>Pour activer votre compte, confirmez votre adresse email avec le lien ci-dessous.</p>
+    <p><a href="{{ activation_url }}" style="display:inline-block;padding:12px 18px;background:#a81d33;color:#fff;text-decoration:none;">Confirmer mon adresse</a></p>
+    <p style="font-size:13px;color:#6b6862;">Si le bouton ne fonctionne pas, ouvrez ce lien:<br>{{ activation_url }}</p>
+    <p style="font-size:12px;color:#6b6862;">Si vous n'êtes pas à l'origine de cette inscription, ignorez ce message.</p>
+</main>
+</body>
+</html>

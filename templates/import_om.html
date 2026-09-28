@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Import Orange Money - interopRapprochement{% endblock %}
+
+{% block content %}
+<h1 class="h4 mb-3">Rapprochement Orange Money</h1>
+{% include "transactions/_om_tabs.html" %}
+
+<div class="card p-4">
+    <h2 class="h5 mb-4">Import du fichier Orange Money</h2>
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="{{ form.fichier.id_for_label }}" class="form-label">{{ form.fichier.label }}</label>
+            {{ form.fichier }}
+            <div class="form-text">{{ form.fichier.help_text }}</div>
+            {% for error in form.fichier.errors %}
+                <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-debian">Importer</button>
+    </form>
+</div>
+
+<div class="card p-4 mt-4">
+    <h2 class="h5 mb-3">Historique des imports</h2>
+    {% if historique %}
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Fichier</th>
+                    <th>Date</th>
+                    <th>Statut</th>
+                    <th>Lues</th>
+                    <th>Inserees</th>
+                    <th>Doublons</th>
+                    <th>Hors Succes</th>
+                    <th>Erreurs</th>
+                    <th>Importe par</th>
+                    <th>Le</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for imp in historique %}
+                <tr>
+                    <td>{{ imp.nom_original }}</td>
+                    <td>{{ imp.date_fichier }}</td>
+                    <td>{{ imp.get_statut_display }}</td>
+                    <td>{{ imp.nb_lignes_lues }}</td>
+                    <td>{{ imp.nb_lignes_inserees }}</td>
+                    <td>{{ imp.nb_doublons }}</td>
+                    <td>{{ imp.nb_hors_succes }}</td>
+                    <td>{{ imp.nb_erreurs }}</td>
+                    <td>{{ imp.importe_par }}</td>
+                    <td>{{ imp.importe_le }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted-debian mb-0">Aucun import pour le moment.</p>
+    {% endif %}
+</div>
+{% endblock %}

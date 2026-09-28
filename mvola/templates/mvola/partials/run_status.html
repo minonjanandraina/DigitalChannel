@@ -1,0 +1,9 @@
+<td id="run-status-{{ run.pk }}">
+    <span class="badge {% if run.status == 'succeeded' %}text-bg-success{% elif run.status == 'running' %}text-bg-primary{% else %}text-bg-danger{% endif %}">
+        {{ run.get_status_display }}
+    </span>
+</td>
+<td>
+    {% if run.message %}<div>{{ run.message }}</div>{% endif %}
+    {% if run.process_id %}<div class="small text-muted-debian">Processus #{{ run.process_id }}</div>{% endif %}
+</td>

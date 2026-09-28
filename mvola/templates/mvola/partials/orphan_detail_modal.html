@@ -1,0 +1,84 @@
+<div class="row g-4">
+    <div class="col-12 col-lg-6">
+        <div class="transaction-panel transaction-panel--mvola">
+            <h3 class="h6">Transaction MVOLA</h3>
+            <table class="table table-sm mb-0">
+                <tbody>
+                    <tr><th scope="row">Transaction MVOLA</th><td>{{ row.transid_mvola|default:'-' }}</td></tr>
+                    <tr><th scope="row">Date</th><td>{{ row.date_trans|default:'-' }}</td></tr>
+                    <tr><th scope="row">État</th><td>{{ row.state|default:'-' }}</td></tr>
+                    <tr><th scope="row">Téléphone</th><td>{{ row.msisdn|default:'-' }}</td></tr>
+                    <tr><th scope="row">Nom</th><td>{{ row.nom|default:'-' }}</td></tr>
+                    <tr><th scope="row">Sens</th><td>{{ row.sens|default:'-' }}</td></tr>
+                    <tr><th scope="row">Type d'opération</th><td>{{ row.type_operation|default:'-' }}</td></tr>
+                    <tr><th scope="row">Montant</th><td>{{ row.amount|default:'-' }}</td></tr>
+                    <tr><th scope="row">Solde pivot avant / après</th><td>{{ row.solde_pivot_avant|default:'-' }} / {{ row.solde_pivot_apres|default:'-' }}</td></tr>
+                    <tr><th scope="row">ORIGFTID</th><td>{{ row.origftid|default:'-' }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-12 col-lg-6">
+        <div class="transaction-panel transaction-panel--pamf">
+            <h3 class="h6">Transaction PAMF (CBS)</h3>
+            {% if cbs_transaction %}
+            <table class="table table-sm mb-0">
+                <tbody>
+                    <tr><th scope="row">Request ID</th><td>{{ cbs_transaction.requestID|default:'-' }}</td></tr>
+                    <tr><th scope="row">URL</th><td class="text-break">{{ cbs_transaction.RequestURL|default:'-' }}</td></tr>
+                    <tr><th scope="row">Requête</th><td><pre class="small text-wrap mb-0">{{ cbs_transaction.RequestBody|default:'-' }}</pre></td></tr>
+                    <tr><th scope="row">Réponse</th><td><pre class="small text-wrap mb-0">{{ cbs_transaction.ResponseBody|default:'-' }}</pre></td></tr>
+                </tbody>
+            </table>
+            {% elif cbs_lookup_failed %}
+            <p class="text-danger mb-0">Les détails côté PAMF sont temporairement indisponibles.</p>
+            {% else %}
+            <p class="text-muted-debian mb-0">Aucune transaction correspondante trouvée côté PAMF pour ce TRANSID_MVOLA.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if can_manage_orphans %}
+<hr>
+<h3 class="h6">Régulariser cette transaction</h3>
+<form hx-post="{% url 'mvola:orphan_action' row.id %}" hx-target="#orphanModalBody" hx-swap="innerHTML">
+    {% csrf_token %}
+    {% for error in action_form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+    <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-4">
+            <label class="form-label" for="{{ action_form.status.id_for_label }}">{{ action_form.status.label }}</label>
+            {{ action_form.status }}
+            {% for error in action_form.status.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-12 col-md-6">
+            <label class="form-label" for="{{ action_form.comments.id_for_label }}">{{ action_form.comments.label }}</label>
+            {{ action_form.comments }}
+        </div>
+        <div class="col-12 col-md-2">
+            <button class="btn btn-debian w-100" type="submit">Enregistrer</button>
+        </div>
+    </div>
+</form>
+{% endif %}
+
+<hr>
+<h3 class="h6">Historique des actions</h3>
+{% if history %}
+<ul class="list-group">
+    {% for entry in history %}
+    <li class="list-group-item">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="badge {% if entry.status == 'done' %}text-bg-success{% elif entry.status == 'processing' %}text-bg-primary{% else %}text-bg-secondary{% endif %}">
+                {{ entry.get_status_display }}
+            </span>
+            <span class="small text-muted-debian">{{ entry.processed_at|date:'d/m/Y H:i' }}{% if entry.is_retried %} · Nouvelle tentative{% endif %}</span>
+        </div>
+        {% if entry.comments %}<p class="mb-0 mt-1">{{ entry.comments }}</p>{% endif %}
+        {% if entry.response_message %}<p class="mb-0 mt-1 small text-muted-debian">{{ entry.response_message }}</p>{% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="text-muted-debian">Aucune action enregistrée pour cette transaction.</p>
+{% endif %}

@@ -1,0 +1,30 @@
+{% include "core/_rapport_entete.html" %}
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr><th>TRANSID</th><th>Date</th><th>rAutotransactionID</th><th>Heure</th><th>Montant</th><th>Statut CBS</th><th>Note</th></tr>
+        </thead>
+        <tbody>
+            {% for t in page_obj %}
+            <tr>
+                <td>{{ t.transid_om }}</td>
+                <td>{{ t.posting_date }}</td>
+                <td>{{ t.r_autotransaction_id }}</td>
+                <td>{{ t.time }}</td>
+                <td>{% if t.montant is not None %}{{ t.montant }}{% else %}-{% endif %}</td>
+                <td>
+                    {% if t.is_success %}
+                    <span class="badge text-bg-success">Succes</span>
+                    {% else %}
+                    <span class="badge text-bg-danger">Echec</span>
+                    {% endif %}
+                </td>
+                <td>{{ t.note|truncatechars:60 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-muted-debian">Aucune transaction.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include "_pagination.html" %}

@@ -1,0 +1,14 @@
+{% extends "accounts/base.html" %}
+{% block title %}Résultat de la confirmation | PAMF / MVOLA{% endblock %}
+{% block content %}
+<section class="auth-panel">
+    <p class="small text-muted-debian mb-2">VÉRIFICATION</p>
+    <h1 class="h3 mb-3">{% if activated %}Adresse confirmée{% else %}Confirmation impossible{% endif %}</h1>
+    <p class="text-muted-debian">{{ message }}</p>
+    {% if activated %}
+        <a class="btn btn-debian" href="{% url 'accounts:login' %}">Continuer vers la connexion</a>
+    {% else %}
+        <a class="btn btn-outline-secondary" href="{% url 'accounts:resend_activation' %}">Demander un nouveau lien</a>
+    {% endif %}
+</section>
+{% endblock %}

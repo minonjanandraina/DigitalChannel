@@ -1,0 +1,14 @@
+{% extends "accounts/base.html" %}
+{% block title %}Renvoyer la confirmation | PAMF / MVOLA{% endblock %}
+{% block content %}
+<section class="auth-panel">
+    <p class="small text-muted-debian mb-2">VÉRIFICATION</p>
+    <h1 class="h3 mb-3">Renvoyer le lien</h1>
+    <p class="text-muted-debian">Saisissez l'adresse utilisée lors de l'inscription.</p>
+    <form method="post">
+        {% csrf_token %}
+        {% include "accounts/_form_fields.html" %}
+        <button class="btn btn-debian w-100" type="submit">Envoyer un nouveau lien</button>
+    </form>
+</section>
+{% endblock %}

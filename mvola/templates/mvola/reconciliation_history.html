@@ -1,0 +1,64 @@
+{% extends "accounts/base.html" %}
+{% block title %}Historique des rapprochements | PAMF / MVOLA{% endblock %}
+{% block content %}
+<section>
+    <p class="small text-muted-debian mb-2">RAPPROCHEMENT WTB</p>
+    <h1 class="h3 mb-4">Historique des rapprochements</h1>
+
+    <form method="get" class="row g-2 align-items-end mb-4">
+        <div class="col-6 col-lg-2">
+            <label class="form-label" for="{{ form.date_from.id_for_label }}">{{ form.date_from.label }}</label>
+            {{ form.date_from }}
+            {% for error in form.date_from.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-6 col-lg-2">
+            <label class="form-label" for="{{ form.date_to.id_for_label }}">{{ form.date_to.label }}</label>
+            {{ form.date_to }}
+            {% for error in form.date_to.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-6 col-lg-2">
+            <label class="form-label" for="{{ form.process_id.id_for_label }}">{{ form.process_id.label }}</label>
+            {{ form.process_id }}
+            {% for error in form.process_id.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-6 col-lg-3">
+            <label class="form-label" for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+            {{ form.status }}
+        </div>
+        <div class="col-12 col-lg-3 d-flex gap-2">
+            <button class="btn btn-debian" type="submit">Filtrer</button>
+            <a class="btn btn-outline-secondary" href="{% url 'mvola:reconciliation_history' %}">Réinitialiser</a>
+        </div>
+    </form>
+
+    {% if processes %}
+    <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Processus</th><th>Date</th><th>Créé le</th><th>Utilisateur</th>
+                    <th>Statut</th><th>Rapprochées</th><th>Orphelines MVOLA</th><th>Orphelines PAMF</th><th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for process in processes %}
+                <tr>
+                    <td>#{{ process.id }}</td>
+                    <td>{{ process.transaction_date|default:'-' }}</td>
+                    <td>{{ process.inserted_at|date:'d/m/Y H:i' }}</td>
+                    <td>{{ process.user_id }}</td>
+                    <td>{{ process.status }}</td>
+                    <td>{{ process.matched_count }}</td>
+                    <td>{{ process.orphan_mvola_count }}</td>
+                    <td>{{ process.orphan_pamf_count }}</td>
+                    <td><a class="btn btn-outline-secondary btn-sm" href="{% url 'mvola:reconciliation_detail' process.id %}">Détails</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="text-muted-debian">Aucun rapprochement ne correspond à ces filtres.</p>
+    {% endif %}
+</section>
+{% endblock %}

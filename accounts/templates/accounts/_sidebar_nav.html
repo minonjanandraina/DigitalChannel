@@ -1,0 +1,19 @@
+<div class="sidebar-section-title">Général</div>
+<a class="sidebar-link {% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name == 'home' %}active{% endif %}"
+   href="{% url 'accounts:home' %}">Accueil</a>
+
+{% if perms.auth.import_mvola_report %}
+    <div class="sidebar-section-title mt-4">Rapprochement</div>
+    <a class="sidebar-link {% if request.resolver_match.url_name == 'import' %}active{% endif %}"
+       href="{% url 'mvola:import' %}">Import MVOLA</a>
+{% endif %}
+{% if perms.auth.view_reconciliation_results %}
+    {% if not perms.auth.import_mvola_report %}<div class="sidebar-section-title mt-4">Consultation</div>{% endif %}
+    <a class="sidebar-link {% if request.resolver_match.url_name == 'reconciliation_history' or request.resolver_match.url_name == 'reconciliation_detail' %}active{% endif %}"
+       href="{% url 'mvola:reconciliation_history' %}">Historique des rapprochements</a>
+{% endif %}
+
+{% if user.is_staff %}
+    <div class="sidebar-section-title mt-4">Administration</div>
+    <a class="sidebar-link" href="{% url 'admin:index' %}">Administration Django</a>
+{% endif %}

@@ -1,0 +1,10 @@
+{% extends "accounts/base.html" %}
+{% block title %}Confirmation email | PAMF / MVOLA{% endblock %}
+{% block content %}
+<section class="auth-panel">
+    <p class="small text-muted-debian mb-2">VÉRIFICATION</p>
+    <h1 class="h3 mb-3">Vérifiez votre boîte email</h1>
+    <p class="text-muted-debian">Votre compte restera inactif jusqu'à la confirmation de votre adresse.</p>
+    <a class="btn btn-outline-secondary mt-2" href="{% url 'accounts:resend_activation' %}">Renvoyer le lien</a>
+</section>
+{% endblock %}
