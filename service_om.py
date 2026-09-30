@@ -153,11 +153,12 @@ def delete_existing_process_data(date_str):
         conn.execute(text("""
                     
                     DELETE FROM public.om_orphanomprocessinghistory
-                    WHERE "InteropMvolaReconciliation_id" IN (
+                    WHERE "InteropOmReconciliation_id" IN (
                         SELECT r.id FROM 
-                        public.interop_mvola_process p
-                        join public.interop_mvola_reconciliation r on r.process_id  =p.id
+                        public.interop_om_process p
+                        join public.interop_om_reconciliation r on r.process_id  =p.id
                         WHERE p.transaction_date =  '{dt}'
+                    )
         
                     )
                 """.format(dt=date_str)))
