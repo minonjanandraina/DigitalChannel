@@ -160,7 +160,7 @@ def delete_existing_process_data(date_str):
                         WHERE p.transaction_date =  '{dt}'
                     )
         
-                    )
+                    
                 """.format(dt=date_str)))
         
         conn.execute(text("""
