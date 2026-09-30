@@ -128,10 +128,21 @@ def list_reconciliation_processes(*, date_from=None, date_to=None, process_id=No
             p.transaction_date,
             COUNT(r.id) AS total_count,
             COUNT(r.id) FILTER (WHERE r.reconciliation_status = 'matched') AS matched_count,
-            COUNT(r.id) FILTER (WHERE r.reconciliation_status = 'orphan_om') AS orphan_om_count,
-            COUNT(r.id) FILTER (WHERE r.reconciliation_status = 'orphan_pamf') AS orphan_pamf_count
+            COUNT(r.id) FILTER (
+                WHERE r.reconciliation_status = 'orphan_om' AND COALESCE(h.status, '') <> 'done'
+            ) AS orphan_om_count,
+            COUNT(r.id) FILTER (
+                WHERE r.reconciliation_status = 'orphan_pamf' AND COALESCE(h.status, '') <> 'done'
+            ) AS orphan_pamf_count
         FROM public.interop_om_process p
         LEFT JOIN public.interop_om_reconciliation r ON r.process_id = p.id
+        LEFT JOIN LATERAL (
+            SELECT oh.status
+            FROM public.om_orphanomprocessinghistory oh
+            WHERE oh."InteropOmReconciliation_id" = r.id
+            ORDER BY oh.processed_at DESC
+            LIMIT 1
+        ) h ON true
         {where_clause}
         GROUP BY p.id, p."userID", p."Status", p."insertDate", p.transaction_date
         ORDER BY p.transaction_date DESC, p.id DESC
