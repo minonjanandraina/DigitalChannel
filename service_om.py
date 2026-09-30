@@ -150,7 +150,17 @@ def delete_existing_process_data(date_str):
     engine = create_engine("postgresql://admin_digital_chanel:Raz12Min%40%40@192.168.123.97:5432/digital_chanel_db")
 
     with engine.begin() as conn:
-
+        conn.execute(text("""
+                    
+                    DELETE FROM public.om_orphanomprocessinghistory
+                    WHERE "InteropMvolaReconciliation_id" IN (
+                        SELECT r.id FROM 
+                        public.interop_mvola_process p
+                        join public.interop_mvola_reconciliation r on r.process_id  =p.id
+                        WHERE p.transaction_date =  '{dt}'
+        
+                    )
+                """.format(dt=date_str)))
         
         conn.execute(text("""
             DELETE FROM public.interop_om_reconciliation
