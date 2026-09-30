@@ -46,6 +46,12 @@ CSRF_TRUSTED_ORIGINS = [
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 
+# Plusieurs projets Django tournent sur le même hôte avec des ports différents.
+# Les cookies ne sont pas isolés par port (RFC 6265), donc sans un nom distinct
+# ici, se connecter à une plateforme écrase le cookie de session des autres.
+SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", "digitalchannel_sessionid")
+CSRF_COOKIE_NAME = os.getenv("CSRF_COOKIE_NAME", "digitalchannel_csrftoken")
+
 
 # Application definition
 
