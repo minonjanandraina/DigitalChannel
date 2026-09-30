@@ -12,7 +12,6 @@ import pandas as pd
 import platform
 import pyodbc
 from pathlib import Path
-
 import urllib
 
 from dotenv import load_dotenv
@@ -119,7 +118,7 @@ def get_trx_id_cbs(apiLogid):
             al.RequestId AS trx_id
         FROM [bagsPAMF_CBS_MC].dbo.apiLog al
         WHERE al.rMerchantId = 13
-          AND apiServiceId IN (302, 700)
+          AND apiServiceId IN (302, 700,0)
           AND apiLogId = ?
     '''
 
@@ -156,8 +155,8 @@ def get_mvola_data_cbs(str_date):
 
         -- Account deposit
         SELECT
-            mc.RequestID,
-            'account_deposit',
+            mc.RequestID AS apiLogId,
+            'account_deposit'  AS trx_type,
             act.PostingDate,
             act.AmountCRY
         FROM CBS.dbo.mcTransaction mc

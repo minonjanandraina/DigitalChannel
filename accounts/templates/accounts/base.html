@@ -16,7 +16,7 @@
                     data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar"
                     aria-controls="mobileSidebar" aria-label="Ouvrir le menu">Menu</button>
         {% endif %}
-        <a class="brand-mark text-decoration-none" href="{% url 'accounts:home' %}">PAMF <span class="text-dark">/ MVOLA</span></a>
+        <a class="brand-mark text-decoration-none" href="{% url 'accounts:home' %}">PAMF <span class="text-dark">/ Digital Channel</span></a>
         <div class="ms-auto d-flex align-items-center gap-3">
             {% if user.is_authenticated %}
                 <span class="small text-muted-debian d-none d-sm-inline">{{ user.username }}</span>

@@ -1,8 +1,9 @@
 # CLAUDE.md
-
+this file is for mvola app, 
+please check CLAUDE_OM.md for the app om
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## je t'interdi de toucher à cette fichier: service_mvola.py
+## je t'interdi de toucher à cette fichier: service_mvola.py, service_om.py
 
 ## Commandes courantes
 

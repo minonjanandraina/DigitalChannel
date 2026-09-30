@@ -1,0 +1,219 @@
+{% extends "accounts/base.html" %}
+{% block title %}Import Orange Money | PAMF / OM{% endblock %}
+{% block content %}
+<section class="auth-panel">
+    <p class="small text-muted-debian mb-2">RAPPROCHEMENT WTB</p>
+    <h1 class="h3 mb-2">Importer un rapport Orange Money</h1>
+    <p class="text-muted-debian mb-4">
+        Fichier Excel .xls, nommé Daily-ChannelUserTransactionReport-0324660679-YYYYMMDD.xls.
+    </p>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+        <div class="mb-3">
+            <label class="form-label" for="{{ form.report.id_for_label }}">{{ form.report.label }}</label>
+            {{ form.report }}
+            {% for error in form.report.errors %}<div class="text-danger small mt-2">{{ error }}</div>{% endfor %}
+        </div>
+        <button class="btn btn-debian" type="submit">Importer le rapport</button>
+        <a class="btn btn-outline-secondary ms-2" href="{% url 'accounts:home' %}">Retour</a>
+    </form>
+</section>
+<section class="mt-4">
+    <h2 class="h5 mb-3">Rapports disponibles</h2>
+    {% if reports_page %}
+        <div class="table-responsive">
+            <table class="table table-sm align-middle reports-table">
+                <thead><tr><th>Fichier</th><th class="text-end">Action</th></tr></thead>
+                <tbody>
+                    {% for filename in reports_page %}
+                    <tr>
+                        <td>{{ filename }}</td>
+                        <td class="text-end">
+                                  <form method="post" action="{% url 'om:launch_reconciliation' %}"
+                                      data-reconciliation-form>
+                                {% csrf_token %}
+                                <input type="hidden" name="filename" value="{{ filename }}">
+                                <button class="btn btn-debian btn-sm" type="submit">Lancer</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if reports_page.paginator.num_pages > 1 %}
+        <nav aria-label="Pagination des rapports disponibles">
+            <ul class="pagination pagination-sm">
+                {% if reports_page.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?reports_page={{ reports_page.previous_page_number }}">Précédent</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+                {% endif %}
+                {% for page_num in reports_page.paginator.page_range %}
+                <li class="page-item {% if page_num == reports_page.number %}active{% endif %}">
+                    <a class="page-link" href="?reports_page={{ page_num }}">{{ page_num }}</a>
+                </li>
+                {% endfor %}
+                {% if reports_page.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?reports_page={{ reports_page.next_page_number }}">Suivant</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    {% else %}
+        <p class="text-muted-debian">Aucun rapport disponible.</p>
+    {% endif %}
+</section>
+<section class="mt-4">
+    <h2 class="h5 mb-3">Mes lancements récents</h2>
+    {% if runs %}
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead><tr><th>Fichier</th><th>Demandé le</th><th>État</th><th>Message</th></tr></thead>
+                <tbody>
+                    {% for run in runs %}
+                    <tr>
+                        <td>{{ run.filename }}</td>
+                        <td>{{ run.created_at|date:'d/m/Y H:i' }}</td>
+                        {% include "om/partials/run_status.html" %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-muted-debian">Aucun rapprochement lancé.</p>
+    {% endif %}
+</section>
+<div class="modal fade" id="reconciliationModal" tabindex="-1" aria-labelledby="reconciliationModalTitle"
+     aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="reconciliationModalTitle">Rapprochement en cours</h2>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2" id="reconciliationFilename"></p>
+                <div class="d-flex align-items-center gap-2" role="status" aria-live="polite">
+                    <span class="spinner-border spinner-border-sm" id="reconciliationSpinner" aria-hidden="true"></span>
+                    <span class="badge text-bg-primary" id="reconciliationState">Prêt</span>
+                </div>
+                <p class="small text-muted-debian mt-3 mb-0" id="reconciliationMessage">
+                    Le traitement démarrera après validation.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-debian" id="reconciliationClose" disabled>Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    const forms = document.querySelectorAll('[data-reconciliation-form]');
+    forms.forEach(function (form) {
+        const row = form.closest('tr');
+        if (!row) return;
+        form.addEventListener('mouseenter', function () { row.classList.add('row-hover'); });
+        form.addEventListener('mouseleave', function () { row.classList.remove('row-hover'); });
+    });
+
+    const modalElement = document.getElementById('reconciliationModal');
+    if (!forms.length || !modalElement) return;
+
+    const modal = new bootstrap.Modal(modalElement, {backdrop: 'static', keyboard: false});
+    const closeButton = document.getElementById('reconciliationClose');
+    const filenameElement = document.getElementById('reconciliationFilename');
+    const stateElement = document.getElementById('reconciliationState');
+    const messageElement = document.getElementById('reconciliationMessage');
+    const spinner = document.getElementById('reconciliationSpinner');
+    let reconciliationInProgress = false;
+    let hasRun = false;
+
+    window.addEventListener('beforeunload', function (event) {
+        if (reconciliationInProgress) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
+    });
+
+    modalElement.addEventListener('hide.bs.modal', function (event) {
+        if (reconciliationInProgress) event.preventDefault();
+    });
+
+    closeButton.addEventListener('click', function () {
+        if (!reconciliationInProgress && !closeButton.disabled) modal.hide();
+    });
+
+    modalElement.addEventListener('hidden.bs.modal', function () {
+        if (hasRun) window.location.reload();
+    });
+
+    function finish(status, label, message, processId) {
+        reconciliationInProgress = false;
+        closeButton.disabled = false;
+        spinner.classList.add('d-none');
+        stateElement.className = status === 'succeeded'
+            ? 'badge text-bg-success'
+            : 'badge text-bg-danger';
+        stateElement.textContent = label;
+        const details = [message, processId ? 'Processus #' + processId : '']
+            .filter(Boolean)
+            .join(' · ');
+        messageElement.textContent = details;
+    }
+
+    forms.forEach(function (form) {
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            if (reconciliationInProgress) return;
+
+            const filename = form.querySelector('[name=filename]').value;
+            hasRun = false;
+            reconciliationInProgress = true;
+            closeButton.disabled = true;
+            spinner.classList.remove('d-none');
+            stateElement.className = 'badge text-bg-primary';
+            stateElement.textContent = 'En cours...';
+            filenameElement.textContent = filename;
+            messageElement.textContent = 'Le serveur attend la fin du rapprochement. Ne quittez pas cette page.';
+            modal.show();
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value,
+                    },
+                    body: new FormData(form),
+                    credentials: 'same-origin',
+                });
+                const result = await response.json();
+                if (!response.ok || !result.ok) {
+                    hasRun = true;
+                    finish('failed', result.label || 'Échec', result.message || 'Le rapprochement a échoué.');
+                    return;
+                }
+
+                hasRun = true;
+                finish(result.status, result.label, result.message, result.process_id);
+            } catch (error) {
+                hasRun = true;
+                finish('failed', 'Échec', 'Impossible de récupérer le résultat du rapprochement.');
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

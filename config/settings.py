@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts.apps.AccountsConfig',
     'mvola.apps.MvolaConfig',
+    'om.apps.OmConfig',
 ]
 
 MIDDLEWARE = [
@@ -178,6 +179,10 @@ MVOLA_INPUT_DIR = Path(
     os.getenv("MVOLA_INPUT_DIR", str(BASE_DIR / "input" / "mvola"))
 ).resolve()
 MVOLA_MAX_UPLOAD_SIZE = int(os.getenv("MVOLA_MAX_UPLOAD_SIZE", str(25 * 1024 * 1024)))
+OM_INPUT_DIR = Path(
+    os.getenv("OM_INPUT_DIR", str(BASE_DIR / "input" / "om"))
+).resolve()
+OM_MAX_UPLOAD_SIZE = int(os.getenv("OM_MAX_UPLOAD_SIZE", str(10 * 1024 * 1024)))
 
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "accounts:home"

@@ -38,12 +38,12 @@ body {
     color: #fff;
 }
 
-.reports-table tbody tr > * {
+.reports-table tbody tr>* {
     transition: background-color 0.15s ease-in-out;
 }
 
-.reports-table tbody tr.row-hover > *,
-.reports-table tbody tr:has([data-reconciliation-form]:hover) > * {
+.reports-table tbody tr.row-hover>*,
+.reports-table tbody tr:has([data-reconciliation-form]:hover)>* {
     --bs-table-bg: rgba(168, 29, 51, 0.08);
     background-color: rgba(168, 29, 51, 0.08);
 }
@@ -109,6 +109,20 @@ body {
     background-color: #f8eeee;
     color: var(--debian-red-dark);
     font-weight: 700;
+}
+
+.sidebar-link[data-bs-toggle="collapse"] .sidebar-caret {
+    display: inline-block;
+    transition: transform 0.15s ease-in-out;
+}
+
+.sidebar-link[data-bs-toggle="collapse"][aria-expanded="true"] .sidebar-caret {
+    transform: rotate(-180deg);
+}
+
+.sidebar-sublink {
+    padding-left: 1.5rem;
+    font-size: 0.92rem;
 }
 
 .auth-panel {

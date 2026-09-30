@@ -210,3 +210,37 @@ class SidebarNavigationTests(TestCase):
 		content = response.content.decode()
 
 		self.assertLess(content.index('>Import MVOLA</a>'), content.index('>Administration Django</a>'))
+
+	def test_backoffice_sees_om_import_and_mvola_import(self):
+		self.login_with_role('Backoffice')
+
+		response = self.client.get(reverse('accounts:home'))
+		content = response.content.decode()
+
+		self.assertIn('>Import Orange Money</a>', content)
+		self.assertIn('WTB Orange Money', content)
+		self.assertIn('WTB MVOLA', content)
+		self.assertLess(content.index('WTB MVOLA'), content.index('WTB Orange Money'))
+
+	def test_viewer_sees_om_history_but_no_om_import(self):
+		self.login_with_role('Viewer')
+
+		response = self.client.get(reverse('accounts:home'))
+
+		self.assertContains(response, 'WTB Orange Money')
+		self.assertNotContains(response, '>Import Orange Money</a>')
+
+	def test_user_without_any_capability_sees_no_reconciliation_menus(self):
+		user = get_user_model().objects.create_user(
+			username='sidebar-no-role',
+			email='sidebar-no-role@example.com',
+			password='Long-local-pass-123!',
+			is_active=True,
+		)
+		self.client.force_login(user)
+
+		response = self.client.get(reverse('accounts:home'))
+
+		self.assertNotContains(response, 'WTB MVOLA')
+		self.assertNotContains(response, 'WTB Orange Money')
+		self.assertNotContains(response, '>Rapprochement</div>')

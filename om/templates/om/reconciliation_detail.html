@@ -1,0 +1,118 @@
+{% extends "accounts/base.html" %}
+{% block title %}Détail du rapprochement #{{ process.id }} | PAMF / OM{% endblock %}
+{% block content %}
+<section>
+    <p class="small text-muted-debian mb-2">RAPPROCHEMENT WTB / PROCESSUS #{{ process.id }}</p>
+    <h1 class="h3 mb-2">Détail du rapprochement Orange Money</h1>
+    <p class="text-muted-debian mb-4">Date: {{ process.transaction_date|default:'-' }} · Créé le {{ process.inserted_at|date:'d/m/Y H:i' }} · Utilisateur #{{ process.user_id }}</p>
+
+    <nav aria-label="Sources des données">
+        <div class="nav nav-tabs mb-3" role="tablist">
+            {% for tab in source_tabs %}
+            <a class="nav-link {% if source == tab.key %}active{% endif %}"
+               href="{{ tab.url }}" role="tab"
+               aria-selected="{% if source == tab.key %}true{% else %}false{% endif %}">{{ tab.label }}</a>
+            {% endfor %}
+        </div>
+    </nav>
+
+    {% if source == 'reconciliation' %}
+    <nav aria-label="Statut du rapprochement">
+        <div class="nav nav-pills mb-3" role="tablist">
+            {% for tab in status_tabs %}
+            <a class="nav-link {% if status == tab.key %}active{% endif %}"
+               href="{{ tab.url }}" role="tab"
+               aria-selected="{% if status == tab.key %}true{% else %}false{% endif %}">{{ tab.label }}</a>
+            {% endfor %}
+        </div>
+    </nav>
+    {% endif %}
+    <form method="get" action="{% url 'om:reconciliation_detail' process.id %}" class="row g-2 align-items-end mb-4">
+        <input type="hidden" name="source" value="{{ source }}">
+        {% if source == 'reconciliation' %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+        <div class="col-12 col-md-4">
+            <label class="form-label" for="{{ filter_form.transaction_id.id_for_label }}">{{ filter_form.transaction_id.label }}</label>
+            {{ filter_form.transaction_id }}
+            {% for error in filter_form.transaction_id.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        {% if source != 'cbs' %}
+        <div class="col-6 col-md-3">
+            <label class="form-label" for="{{ filter_form.account.id_for_label }}">{{ filter_form.account.label }}</label>
+            {{ filter_form.account }}
+            {% for error in filter_form.account.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        {% endif %}
+        <div class="col-6 col-md-3">
+            <label class="form-label" for="{{ filter_form.amount.id_for_label }}">{% if source == 'reconciliation' %}{{ filter_form.amount.label }}{% else %}Montant{% endif %}</label>
+            {{ filter_form.amount }}
+            {% for error in filter_form.amount.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+            <button class="btn btn-debian" type="submit">Filtrer</button>
+            <a class="btn btn-outline-secondary" href="?source={{ source }}{% if source == 'reconciliation' %}&amp;status={{ status }}{% endif %}">Effacer</a>
+        </div>
+    </form>
+
+    <div class="d-flex justify-content-between align-items-center">
+        <p class="small text-muted-debian mb-0">{{ total }} ligne(s)</p>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'om:reconciliation_detail_export' process.id %}?{{ pagination_query }}">Exporter (CSV)</a>
+    </div>
+    {% if rows %}
+    <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle">
+            <thead><tr>{% for key, label in columns %}<th>{{ label }}</th>{% endfor %}</tr></thead>
+            <tbody>
+                {% for row in rows %}
+                <tr{% if source == 'reconciliation' and status == 'orphan_om' %} class="orphan-row" role="button" tabindex="0" hx-get="{% url 'om:orphan_detail' row.id %}" hx-target="#orphanModalBody" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#orphanModal"{% endif %}>
+                    {% for value in row.values %}<td>{{ value|default:'-' }}</td>{% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="text-muted-debian">Aucune ligne pour cette source et ce filtre.</p>
+    {% endif %}
+
+    {% if total_pages > 1 %}
+    <nav class="d-flex justify-content-between align-items-center mt-3" aria-label="Pagination des résultats">
+        <span class="small text-muted-debian">Page {{ page }} / {{ total_pages }}</span>
+        <div class="d-flex gap-2">
+            {% if has_previous %}<a class="btn btn-outline-secondary btn-sm" href="?{{ pagination_query }}&amp;page={{ previous_page }}">Précédent</a>{% endif %}
+            {% if has_next %}<a class="btn btn-outline-secondary btn-sm" href="?{{ pagination_query }}&amp;page={{ next_page }}">Suivant</a>{% endif %}
+        </div>
+    </nav>
+    {% endif %}
+    <a class="btn btn-outline-secondary mt-4" href="{% url 'om:reconciliation_history' %}">Retour à l'historique</a>
+</section>
+
+{% if source == 'reconciliation' and status == 'orphan_om' %}
+<div class="modal fade" id="orphanModal" tabindex="-1" aria-labelledby="orphanModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl modal-2x">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="orphanModalTitle">Transaction orpheline Orange Money</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body" id="orphanModalBody">
+                <p class="text-muted-debian mb-0">Chargement…</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% if source == 'reconciliation' and status == 'orphan_om' %}
+{% block extra_scripts %}
+<script>
+(function () {
+    const modalElement = document.getElementById('orphanModal');
+    if (!modalElement) return;
+    modalElement.addEventListener('hidden.bs.modal', function () {
+        window.location.reload();
+    });
+})();
+</script>
+{% endblock %}
+{% endif %}
