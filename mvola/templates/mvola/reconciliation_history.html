@@ -42,7 +42,7 @@
             </thead>
             <tbody>
                 {% for process in processes %}
-                <tr>
+                <tr{% if process.orphan_mvola_count %} class="row-has-orphans"{% endif %}>
                     <td>#{{ process.id }}</td>
                     <td>{{ process.transaction_date|default:'-' }}</td>
                     <td>{{ process.inserted_at|date:'d/m/Y H:i' }}</td>

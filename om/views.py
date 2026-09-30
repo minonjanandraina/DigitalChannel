@@ -24,7 +24,14 @@ from .forms import (
     ReconciliationHistoryFilterForm,
     parse_transaction_date,
 )
-from .models import InteropOmProcess, InteropOmReconciliation, OrphanOmProcessingHistory, ReconciliationRun
+from .models import (
+    InteropOmCbs,
+    InteropOmOm,
+    InteropOmProcess,
+    InteropOmReconciliation,
+    OrphanOmProcessingHistory,
+    ReconciliationRun,
+)
 from .orphan_history import copy_orphan_processing_history
 from .results_repository import (
     RESULT_SOURCES,
@@ -229,19 +236,31 @@ def _resolve_detail_filters(request):
 
 
 def _latest_orphan_statuses(source, status, rows):
+    """Returns {reconciliation_id: raw_status} using the most recent history
+    entry per row, defaulting untouched orphan rows to 'orphan_om'."""
     latest_statuses = {}
     if source == 'reconciliation' and status == 'orphan_om' and rows:
         reconciliation_ids = [row.get('id') for row in rows if row.get('id') is not None]
-        status_labels = dict(OrphanOmProcessingHistory.STATUS_CHOICES)
+        latest_statuses = {reconciliation_id: 'orphan_om' for reconciliation_id in reconciliation_ids}
         history_entries = (
             OrphanOmProcessingHistory.objects
             .filter(InteropOmReconciliation_id__in=reconciliation_ids)
             .order_by('-processed_at')
             .values_list('InteropOmReconciliation_id', 'status')
         )
+        seen = set()
         for reconciliation_id, history_status in history_entries:
-            latest_statuses.setdefault(reconciliation_id, status_labels.get(history_status, history_status))
+            if reconciliation_id in seen:
+                continue
+            seen.add(reconciliation_id)
+            latest_statuses[reconciliation_id] = history_status
     return latest_statuses
+
+
+ORPHAN_ROW_CSS_CLASS = {
+    'orphan_om': 'orphan-status-open',
+    'processing': 'orphan-status-processing',
+}
 
 
 @login_required
@@ -319,6 +338,8 @@ def reconciliation_detail(request, process_id):
             )
         ]
     pagination_query = urlencode({**filter_params, 'source': source, 'status': status})
+    status_labels = dict(OrphanOmProcessingHistory.STATUS_CHOICES)
+    is_orphan_om_tab = source == 'reconciliation' and status == 'orphan_om'
     return render(request, 'om/reconciliation_detail.html', {
         'process': process,
         'filter_form': filter_form,
@@ -331,11 +352,16 @@ def reconciliation_detail(request, process_id):
         'rows': [
             {
                 'id': row.get('id'),
+                'row_class': (
+                    ORPHAN_ROW_CSS_CLASS.get(latest_statuses.get(row.get('id')), '')
+                    if is_orphan_om_tab
+                    else ''
+                ),
                 'values': (
                     [row.get(column) for column, _label in results['columns']]
                     + (
-                        [latest_statuses.get(row.get('id'), '-')]
-                        if source == 'reconciliation' and status == 'orphan_om'
+                        [status_labels.get(latest_statuses.get(row.get('id')), '-')]
+                        if is_orphan_om_tab
                         else []
                     )
                 ),
@@ -490,3 +516,29 @@ def orphan_transaction_action(request, reconciliation_id):
         'om/partials/orphan_detail_modal.html',
         _orphan_detail_context(request, row, action_form=form),
     )
+
+
+def _get_orphan_pamf_row(reconciliation_id):
+    row = get_object_or_404(InteropOmReconciliation, pk=reconciliation_id)
+    if row.reconciliation_status != 'orphan_pamf':
+        raise Http404('Cette transaction n’est pas une orpheline PAMF.')
+    return row
+
+
+@login_required
+@permission_required('auth.view_reconciliation_results', raise_exception=True)
+def orphan_pamf_detail(request, reconciliation_id):
+    row = _get_orphan_pamf_row(reconciliation_id)
+    cbs_transactions = (
+        InteropOmCbs.objects.filter(trx_id=row.trx_id).order_by('-id')
+        if row.trx_id else InteropOmCbs.objects.none()
+    )
+    om_transactions = (
+        InteropOmOm.objects.filter(trx_id=row.trx_id).order_by('-id')
+        if row.trx_id else InteropOmOm.objects.none()
+    )
+    return render(request, 'om/partials/orphan_pamf_detail_modal.html', {
+        'row': row,
+        'cbs_transactions': cbs_transactions,
+        'om_transactions': om_transactions,
+    })

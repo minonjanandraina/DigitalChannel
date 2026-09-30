@@ -1,0 +1,45 @@
+<div class="row g-4">
+    <div class="col-12 col-lg-6">
+        <div class="transaction-panel transaction-panel--mvola">
+            <h3 class="h6">Transaction Orange Money</h3>
+            {% if om_transactions %}
+            {% for om in om_transactions %}
+            <table class="table table-sm mb-3">
+                <tbody>
+                    <tr><th scope="row">Transaction OM</th><td>{{ om.trx_id|default:'-' }}</td></tr>
+                    <tr><th scope="row">Date</th><td>{{ om.date|default:'-' }} {{ om.hour|default:'' }}</td></tr>
+                    <tr><th scope="row">Statut OM</th><td>{{ om.status|default:'-' }}</td></tr>
+                    <tr><th scope="row">Pseudo</th><td>{{ om.pseudo|default:'-' }}</td></tr>
+                    <tr><th scope="row">Compte client</th><td>{{ om.client_account|default:'-' }}</td></tr>
+                    <tr><th scope="row">Type de transaction</th><td>{{ om.transaction_type|default:'-' }}</td></tr>
+                    <tr><th scope="row">Débit / Crédit</th><td>{{ om.debit|default:'-' }} / {{ om.credit|default:'-' }}</td></tr>
+                    <tr><th scope="row">Processus</th><td>#{{ om.process_id }}</td></tr>
+                </tbody>
+            </table>
+            {% endfor %}
+            {% else %}
+            <p class="text-muted-debian mb-0">Aucune transaction Orange Money trouvée pour ce trx_id.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-12 col-lg-6">
+        <div class="transaction-panel transaction-panel--pamf">
+            <h3 class="h6">Transaction PAMF (CBS)</h3>
+            {% if cbs_transactions %}
+            {% for cbs in cbs_transactions %}
+            <table class="table table-sm mb-3">
+                <tbody>
+                    <tr><th scope="row">API Log ID</th><td>{{ cbs.api_log_id|default:'-' }}</td></tr>
+                    <tr><th scope="row">Date de comptabilisation</th><td>{{ cbs.posting_date|default:'-' }}</td></tr>
+                    <tr><th scope="row">Montant</th><td>{{ cbs.amount_cry|default:'-' }}</td></tr>
+                    <tr><th scope="row">Transaction PAMF (trx_id)</th><td>{{ cbs.trx_id|default:'-' }}</td></tr>
+                    <tr><th scope="row">Processus</th><td>#{{ cbs.process_id }}</td></tr>
+                </tbody>
+            </table>
+            {% endfor %}
+            {% else %}
+            <p class="text-muted-debian mb-0">Aucune transaction PAMF trouvée pour ce trx_id.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>

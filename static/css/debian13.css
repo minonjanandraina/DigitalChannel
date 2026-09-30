@@ -49,6 +49,30 @@ body {
     background-color: rgba(168, 29, 51, 0.08);
 }
 
+.table tbody tr.row-has-orphans>*,
+.table tbody tr.orphan-status-open>* {
+    --bs-table-bg: rgba(220, 38, 38, 0.7);
+    background-color: rgba(220, 38, 38, 0.7) !important;
+    color: var(--text) !important;
+}
+
+.table tbody tr.row-has-orphans:hover>*,
+.table tbody tr.orphan-status-open:hover>* {
+    --bs-table-bg: rgba(220, 38, 38, 0.85);
+    background-color: rgba(220, 38, 38, 0.85) !important;
+}
+
+.table tbody tr.orphan-status-processing>* {
+    --bs-table-bg: rgba(31, 157, 85, 0.7);
+    background-color: rgba(31, 157, 85, 0.7) !important;
+    color: var(--text) !important;
+}
+
+.table tbody tr.orphan-status-processing:hover>* {
+    --bs-table-bg: rgba(31, 157, 85, 0.85);
+    background-color: rgba(31, 157, 85, 0.85) !important;
+}
+
 .auth-shell {
     width: min(100% - 2rem, 440px);
     margin: clamp(2rem, 8vh, 5rem) auto;

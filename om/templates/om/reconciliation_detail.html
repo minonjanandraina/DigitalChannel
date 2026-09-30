@@ -63,7 +63,7 @@
             <thead><tr>{% for key, label in columns %}<th>{{ label }}</th>{% endfor %}</tr></thead>
             <tbody>
                 {% for row in rows %}
-                <tr{% if source == 'reconciliation' and status == 'orphan_om' %} class="orphan-row" role="button" tabindex="0" hx-get="{% url 'om:orphan_detail' row.id %}" hx-target="#orphanModalBody" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#orphanModal"{% endif %}>
+                <tr{% if source == 'reconciliation' and status == 'orphan_om' %} class="orphan-row {{ row.row_class }}" role="button" tabindex="0" hx-get="{% url 'om:orphan_detail' row.id %}" hx-target="#orphanModalBody" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#orphanModal"{% elif source == 'reconciliation' and status == 'orphan_pamf' %} class="orphan-row" role="button" tabindex="0" hx-get="{% url 'om:orphan_pamf_detail' row.id %}" hx-target="#orphanPamfModalBody" hx-trigger="click" data-bs-toggle="modal" data-bs-target="#orphanPamfModal"{% endif %}>
                     {% for value in row.values %}<td>{{ value|default:'-' }}</td>{% endfor %}
                 </tr>
                 {% endfor %}
@@ -95,6 +95,22 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body" id="orphanModalBody">
+                <p class="text-muted-debian mb-0">Chargement…</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if source == 'reconciliation' and status == 'orphan_pamf' %}
+<div class="modal fade" id="orphanPamfModal" tabindex="-1" aria-labelledby="orphanPamfModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl modal-2x">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="orphanPamfModalTitle">Transaction orpheline PAMF</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body" id="orphanPamfModalBody">
                 <p class="text-muted-debian mb-0">Chargement…</p>
             </div>
         </div>
