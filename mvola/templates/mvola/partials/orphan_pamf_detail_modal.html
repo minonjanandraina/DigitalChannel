@@ -27,17 +27,72 @@
     <div class="col-12 col-lg-6">
         <div class="transaction-panel transaction-panel--pamf">
             <h3 class="h6">Transaction PAMF (CBS)</h3>
-            {% if cbs_transactions %}
-            {% for cbs in cbs_transactions %}
-            <table class="table table-sm mb-3">
+            {% if cbs_entries %}
+            {% for entry in cbs_entries %}
+            <table class="table table-sm mb-2">
                 <tbody>
-                    <tr><th scope="row">API Log ID</th><td>{{ cbs.api_log_id|default:'-' }}</td></tr>
-                    <tr><th scope="row">Date de comptabilisation</th><td>{{ cbs.posting_date|default:'-' }}</td></tr>
-                    <tr><th scope="row">Montant</th><td>{{ cbs.amount_cry|default:'-' }}</td></tr>
-                    <tr><th scope="row">Transaction PAMF (trx_id)</th><td>{{ cbs.trx_id|default:'-' }}</td></tr>
-                    <tr><th scope="row">Processus</th><td>#{{ cbs.process_id }}</td></tr>
+                    <tr><th scope="row">API Log ID</th><td>{{ entry.cbs.api_log_id|default:'-' }}</td></tr>
+                    <tr><th scope="row">Date de comptabilisation</th><td>{{ entry.cbs.posting_date|default:'-' }}</td></tr>
+                    <tr><th scope="row">Montant</th><td>{{ entry.cbs.amount_cry|default:'-' }}</td></tr>
+                    <tr><th scope="row">Transaction PAMF (trx_id)</th><td>{{ entry.cbs.trx_id|default:'-' }}</td></tr>
+                    <tr><th scope="row">Processus</th><td>#{{ entry.cbs.process_id }}</td></tr>
                 </tbody>
             </table>
+
+            {% with details=entry.api_log_details %}
+            {% if entry.api_log_failed %}
+            <p class="text-danger small mb-3">Les détails de l'appel API CBS sont temporairement indisponibles.</p>
+            {% elif not details %}
+            <p class="text-muted-debian small mb-3">Aucun appel API CBS trouvé pour ce trx_id.</p>
+            {% else %}
+            <div class="mb-3">
+                <p class="small text-muted-debian mb-1">
+                    Appel API{% if details.endpoint %} · {{ details.endpoint }}{% endif %}
+                </p>
+                {% if details.request_url %}<p class="small text-break mb-2">{{ details.request_url }}</p>{% endif %}
+
+                {% if details.request_fields %}
+                <table class="table table-sm mb-2">
+                    <caption class="caption-top small text-muted-debian px-2">Requête</caption>
+                    <tbody>
+                        {% for label, value in details.request_fields %}
+                        <tr><th scope="row">{{ label }}</th><td>{{ value|default:'-' }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                {% if details.response_fields %}
+                <table class="table table-sm mb-2">
+                    <caption class="caption-top small text-muted-debian px-2">Réponse</caption>
+                    <tbody>
+                        {% for label, value in details.response_fields %}
+                        <tr><th scope="row">{{ label }}</th><td>{{ value|default:'-' }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                {% if details.loan_list %}
+                <table class="table table-sm mb-2">
+                    <caption class="caption-top small text-muted-debian px-2">Prêts réglés</caption>
+                    <thead><tr><th>LoanNumber</th><th>Amount</th></tr></thead>
+                    <tbody>
+                        {% for loan_number, amount in details.loan_list %}
+                        <tr><td>{{ loan_number|default:'-' }}</td><td>{{ amount|default:'-' }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                {% if not details.endpoint %}
+                <p class="small text-muted-debian mb-1">Endpoint non reconnu, corps bruts :</p>
+                <pre class="small text-wrap mb-1">{{ details.raw_request_body|default:'-' }}</pre>
+                <pre class="small text-wrap mb-2">{{ details.raw_response_body|default:'-' }}</pre>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endwith %}
             {% endfor %}
             {% else %}
             <p class="text-muted-debian mb-0">Aucune transaction PAMF trouvée pour ce trx_id.</p>

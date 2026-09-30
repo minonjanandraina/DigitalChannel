@@ -1,4 +1,5 @@
 import csv
+import json
 import logging
 import math
 from pathlib import Path
@@ -525,6 +526,81 @@ def _get_orphan_pamf_row(reconciliation_id):
     return row
 
 
+def _load_cbs_api_log(request_id):
+    if not request_id:
+        return None, False
+    try:
+        return get_transaction_by_requestID(request_id), False
+    except Exception:
+        logger.exception('Could not fetch CBS API log for requestID %s.', request_id)
+        return None, True
+
+
+def _describe_cbs_api_log(api_log):
+    """Splits a bagsPAMF_CBS_MC apiLog record's RequestURL/RequestBody/ResponseBody
+    into structured fields for the documented loanRepayment, loanRepaymentByAlias
+    and accountDeposit endpoints. Unknown endpoints fall back to the raw JSON."""
+    if not api_log:
+        return None
+
+    request_url = api_log.get('RequestURL') or ''
+    try:
+        request_data = json.loads(api_log.get('RequestBody') or '{}')
+    except (TypeError, ValueError):
+        request_data = {}
+    try:
+        response_data = json.loads(api_log.get('ResponseBody') or '{}')
+    except (TypeError, ValueError):
+        response_data = {}
+
+    response_fields = [
+        ('Id', response_data.get('Id')),
+        ('Code', response_data.get('Code')),
+        ('Msg', response_data.get('Msg')),
+    ]
+    loan_list = []
+
+    if 'loanRepaymentByAlias' in request_url:
+        endpoint = 'Loan Repayment By Alias'
+        request_fields = [
+            ('Alias', request_data.get('Alias')),
+            ('Amount', request_data.get('Amount')),
+        ]
+        loan_list = [
+            (loan.get('LoanNumber'), loan.get('Amount'))
+            for loan in (response_data.get('Body') or {}).get('LoanList') or []
+        ]
+    elif 'loanRepayment' in request_url:
+        endpoint = 'Loan Repayment'
+        request_fields = [
+            ('Alias', request_data.get('Alias')),
+            ('LoanNumber', request_data.get('LoanNumber')),
+            ('Amount', request_data.get('Amount')),
+        ]
+    elif 'accountDeposit' in request_url:
+        endpoint = 'Account Deposit'
+        request_fields = [
+            ('Alias', request_data.get('Alias')),
+            ('AccountNumber', request_data.get('AccountNumber')),
+            ('Amount', request_data.get('Amount')),
+        ]
+    else:
+        endpoint = None
+        request_fields = []
+        response_fields = []
+
+    return {
+        'request_id': api_log.get('requestID'),
+        'request_url': request_url,
+        'endpoint': endpoint,
+        'request_fields': request_fields,
+        'response_fields': response_fields,
+        'loan_list': loan_list,
+        'raw_request_body': api_log.get('RequestBody'),
+        'raw_response_body': api_log.get('ResponseBody'),
+    }
+
+
 @login_required
 @permission_required('auth.view_reconciliation_results', raise_exception=True)
 def orphan_pamf_detail(request, reconciliation_id):
@@ -537,8 +613,35 @@ def orphan_pamf_detail(request, reconciliation_id):
         InteropOmOm.objects.filter(trx_id=row.trx_id).order_by('-id')
         if row.trx_id else InteropOmOm.objects.none()
     )
+    cbs_entries = []
+    for cbs in cbs_transactions:
+        api_log, api_log_failed = _load_cbs_api_log(cbs.trx_id)
+        cbs_entries.append({
+            'cbs': cbs,
+            'api_log_failed': api_log_failed,
+            'api_log_details': _describe_cbs_api_log(api_log),
+        })
     return render(request, 'om/partials/orphan_pamf_detail_modal.html', {
         'row': row,
-        'cbs_transactions': cbs_transactions,
+        'cbs_entries': cbs_entries,
         'om_transactions': om_transactions,
+    })
+
+
+def _get_matched_row(reconciliation_id):
+    row = get_object_or_404(InteropOmReconciliation, pk=reconciliation_id)
+    if row.reconciliation_status != 'matched':
+        raise Http404('Cette transaction n’est pas rapprochée.')
+    return row
+
+
+@login_required
+@permission_required('auth.view_reconciliation_results', raise_exception=True)
+def matched_transaction_detail(request, reconciliation_id):
+    row = _get_matched_row(reconciliation_id)
+    api_log, api_log_failed = _load_cbs_api_log(row.trx_id)
+    return render(request, 'om/partials/matched_detail_modal.html', {
+        'row': row,
+        'api_log_failed': api_log_failed,
+        'api_log_details': _describe_cbs_api_log(api_log),
     })

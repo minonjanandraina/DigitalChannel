@@ -2,48 +2,38 @@
     <div class="col-12 col-lg-6">
         <div class="transaction-panel transaction-panel--mvola">
             <h3 class="h6">Transaction Orange Money</h3>
-            {% if om_transactions %}
-            {% for om in om_transactions %}
-            <table class="table table-sm mb-3">
+            <table class="table table-sm mb-0">
                 <tbody>
-                    <tr><th scope="row">Transaction OM</th><td>{{ om.trx_id|default:'-' }}</td></tr>
-                    <tr><th scope="row">Date</th><td>{{ om.date|default:'-' }} {{ om.hour|default:'' }}</td></tr>
-                    <tr><th scope="row">Statut OM</th><td>{{ om.status|default:'-' }}</td></tr>
-                    <tr><th scope="row">Pseudo</th><td>{{ om.pseudo|default:'-' }}</td></tr>
-                    <tr><th scope="row">Compte client</th><td>{{ om.client_account|default:'-' }}</td></tr>
-                    <tr><th scope="row">Type de transaction</th><td>{{ om.transaction_type|default:'-' }}</td></tr>
-                    <tr><th scope="row">Débit / Crédit</th><td>{{ om.debit|default:'-' }} / {{ om.credit|default:'-' }}</td></tr>
-                    <tr><th scope="row">Processus</th><td>#{{ om.process_id }}</td></tr>
+                    <tr><th scope="row">Transaction OM</th><td>{{ row.trx_id|default:'-' }}</td></tr>
+                    <tr><th scope="row">Date</th><td>{{ row.date|default:'-' }} {{ row.hour|default:'' }}</td></tr>
+                    <tr><th scope="row">Statut OM</th><td>{{ row.status|default:'-' }}</td></tr>
+                    <tr><th scope="row">Pseudo</th><td>{{ row.pseudo|default:'-' }}</td></tr>
+                    <tr><th scope="row">Compte client</th><td>{{ row.client_account|default:'-' }}</td></tr>
+                    <tr><th scope="row">Type de transaction</th><td>{{ row.transaction_type|default:'-' }}</td></tr>
+                    <tr><th scope="row">Débit / Crédit</th><td>{{ row.debit|default:'-' }} / {{ row.credit|default:'-' }}</td></tr>
                 </tbody>
             </table>
-            {% endfor %}
-            {% else %}
-            <p class="text-muted-debian mb-0">Aucune transaction Orange Money trouvée pour ce trx_id.</p>
-            {% endif %}
         </div>
     </div>
     <div class="col-12 col-lg-6">
         <div class="transaction-panel transaction-panel--pamf">
             <h3 class="h6">Transaction PAMF (CBS)</h3>
-            {% if cbs_entries %}
-            {% for entry in cbs_entries %}
             <table class="table table-sm mb-2">
                 <tbody>
-                    <tr><th scope="row">API Log ID</th><td>{{ entry.cbs.api_log_id|default:'-' }}</td></tr>
-                    <tr><th scope="row">Date de comptabilisation</th><td>{{ entry.cbs.posting_date|default:'-' }}</td></tr>
-                    <tr><th scope="row">Montant</th><td>{{ entry.cbs.amount_cry|default:'-' }}</td></tr>
-                    <tr><th scope="row">Transaction PAMF (trx_id)</th><td>{{ entry.cbs.trx_id|default:'-' }}</td></tr>
-                    <tr><th scope="row">Processus</th><td>#{{ entry.cbs.process_id }}</td></tr>
+                    <tr><th scope="row">API Log ID</th><td>{{ row.api_log_id|default:'-' }}</td></tr>
+                    <tr><th scope="row">Date de comptabilisation</th><td>{{ row.posting_date|default:'-' }}</td></tr>
+                    <tr><th scope="row">Montant</th><td>{{ row.amount_cry|default:'-' }}</td></tr>
+                    <tr><th scope="row">Transaction PAMF (trx_id)</th><td>{{ row.trx_id|default:'-' }}</td></tr>
                 </tbody>
             </table>
 
-            {% with details=entry.api_log_details %}
-            {% if entry.api_log_failed %}
-            <p class="text-danger small mb-3">Les détails de l'appel API CBS sont temporairement indisponibles.</p>
+            {% with details=api_log_details %}
+            {% if api_log_failed %}
+            <p class="text-danger small mb-0">Les détails de l'appel API CBS sont temporairement indisponibles.</p>
             {% elif not details %}
-            <p class="text-muted-debian small mb-3">Aucun appel API CBS trouvé pour ce trx_id.</p>
+            <p class="text-muted-debian small mb-0">Aucun appel API CBS trouvé pour ce trx_id.</p>
             {% else %}
-            <div class="mb-3">
+            <div class="mb-0">
                 <p class="small text-muted-debian mb-1">
                     Appel API{% if details.endpoint %} · {{ details.endpoint }}{% endif %}
                 </p>
@@ -86,15 +76,11 @@
                 {% if not details.endpoint %}
                 <p class="small text-muted-debian mb-1">Endpoint non reconnu, corps bruts :</p>
                 <pre class="small text-wrap mb-1">{{ details.raw_request_body|default:'-' }}</pre>
-                <pre class="small text-wrap mb-2">{{ details.raw_response_body|default:'-' }}</pre>
+                <pre class="small text-wrap mb-0">{{ details.raw_response_body|default:'-' }}</pre>
                 {% endif %}
             </div>
             {% endif %}
             {% endwith %}
-            {% endfor %}
-            {% else %}
-            <p class="text-muted-debian mb-0">Aucune transaction PAMF trouvée pour ce trx_id.</p>
-            {% endif %}
         </div>
     </div>
 </div>

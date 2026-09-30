@@ -29,4 +29,9 @@ urlpatterns = [
         views.orphan_pamf_detail,
         name='orphan_pamf_detail',
     ),
+    path(
+        'reconciliations/matched/<int:reconciliation_id>/',
+        views.matched_transaction_detail,
+        name='matched_detail',
+    ),
 ]
