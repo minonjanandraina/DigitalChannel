@@ -9,11 +9,37 @@
     <ul class="mb-0">
         {% for role_name in role_names %}<li>{{ role_name }}</li>{% empty %}<li>Aucun rôle attribué</li>{% endfor %}
     </ul>
-    {% if perms.auth.import_mvola_report %}
-        <a class="btn btn-debian mt-4" href="{% url 'mvola:import' %}">Importer un rapport MVOLA</a>
-    {% endif %}
-    {% if perms.auth.view_reconciliation_results %}
-        <a class="btn btn-outline-secondary mt-4" href="{% url 'mvola:reconciliation_history' %}">Consulter les rapprochements</a>
+
+    {% if perms.auth.import_mvola_report or perms.auth.view_reconciliation_results or perms.auth.import_om_report %}
+        <h2 class="h6 mt-4">Modules</h2>
+        <div class="row g-3">
+            {% if perms.auth.import_mvola_report or perms.auth.view_reconciliation_results %}
+                <div class="col-md-6">
+                    <div class="border rounded p-3 h-100">
+                        <h3 class="h6 mb-3">WTB MVOLA</h3>
+                        {% if perms.auth.import_mvola_report %}
+                            <a class="btn btn-debian me-2 mb-2" href="{% url 'mvola:import' %}">Importer un rapport MVOLA</a>
+                        {% endif %}
+                        {% if perms.auth.view_reconciliation_results %}
+                            <a class="btn btn-outline-secondary mb-2" href="{% url 'mvola:reconciliation_history' %}">Consulter les rapprochements</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+            {% if perms.auth.import_om_report or perms.auth.view_reconciliation_results %}
+                <div class="col-md-6">
+                    <div class="border rounded p-3 h-100">
+                        <h3 class="h6 mb-3">WTB Orange Money</h3>
+                        {% if perms.auth.import_om_report %}
+                            <a class="btn btn-debian me-2 mb-2" href="{% url 'om:import' %}">Importer un rapport OM</a>
+                        {% endif %}
+                        {% if perms.auth.view_reconciliation_results %}
+                            <a class="btn btn-outline-secondary mb-2" href="{% url 'om:reconciliation_history' %}">Consulter les rapprochements</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
     {% endif %}
 </section>
 {% endblock %}
