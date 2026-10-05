@@ -6,8 +6,9 @@
     <h1 class="h3 mb-2">Importer un rapport Orange Money</h1>
     <p class="text-muted-debian mb-4">
         Fichier Excel .xls, nommé Daily-ChannelUserTransactionReport-0324660679-YYYYMMDD.xls.
+        Plusieurs fichiers peuvent être sélectionnés à la fois.
     </p>
-    <form method="post" enctype="multipart/form-data">
+    <form method="post" enctype="multipart/form-data" id="importForm">
         {% csrf_token %}
         {% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
         <div class="mb-3">
@@ -15,19 +16,32 @@
             {{ form.report }}
             {% for error in form.report.errors %}<div class="text-danger small mt-2">{{ error }}</div>{% endfor %}
         </div>
-        <button class="btn btn-debian" type="submit">Importer le rapport</button>
+        <button class="btn btn-debian" type="submit">Importer le(s) rapport(s)</button>
         <a class="btn btn-outline-secondary ms-2" href="{% url 'accounts:home' %}">Retour</a>
     </form>
 </section>
 <section class="mt-4">
     <h2 class="h5 mb-3">Rapports disponibles</h2>
     {% if reports_page %}
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="small text-muted-debian"><span id="selectedCount">0</span> sélectionné(s)</span>
+            <button type="button" class="btn btn-debian btn-sm" id="launchSelectedButton" disabled>
+                Lancer la sélection
+            </button>
+        </div>
         <div class="table-responsive">
             <table class="table table-sm align-middle reports-table">
-                <thead><tr><th>Fichier</th><th class="text-end">Action</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectAllReports" aria-label="Sélectionner tous les rapports"></th>
+                        <th>Fichier</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
                 <tbody>
                     {% for filename in reports_page %}
                     <tr>
+                        <td><input type="checkbox" class="report-checkbox" value="{{ filename }}" aria-label="Sélectionner {{ filename }}"></td>
                         <td>{{ filename }}</td>
                         <td class="text-end">
                                   <form method="post" action="{% url 'om:launch_reconciliation' %}"
@@ -111,6 +125,54 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-debian" id="reconciliationClose" disabled>Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalTitle"
+     aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="importModalTitle">Import en cours</h2>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center gap-2 mb-3" role="status" aria-live="polite">
+                    <span class="spinner-border spinner-border-sm" id="importSpinner" aria-hidden="true"></span>
+                    <span class="badge text-bg-primary" id="importState">En cours...</span>
+                </div>
+                <ul class="list-group" id="importResults"></ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-debian" id="importClose" disabled>Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="bulkReconciliationModal" tabindex="-1" aria-labelledby="bulkReconciliationModalTitle"
+     aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="bulkReconciliationModalTitle">Lancer le rapprochement</h2>
+            </div>
+            <div class="modal-body">
+                <div id="bulkConfirmStep">
+                    <p class="mb-2">Confirmez-vous le lancement du rapprochement pour ces rapports ?</p>
+                    <ul class="list-group" id="bulkFileList"></ul>
+                </div>
+                <div id="bulkProgressStep" class="d-none">
+                    <div class="d-flex align-items-center gap-2 mb-3" role="status" aria-live="polite">
+                        <span class="spinner-border spinner-border-sm" id="bulkSpinner" aria-hidden="true"></span>
+                        <span class="badge text-bg-primary" id="bulkState">En cours...</span>
+                    </div>
+                    <ul class="list-group" id="bulkResults"></ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="bulkCancel">Annuler</button>
+                <button type="button" class="btn btn-debian" id="bulkConfirm">Confirmer le lancement</button>
+                <button type="button" class="btn btn-debian d-none" id="bulkClose" disabled>Fermer</button>
             </div>
         </div>
     </div>
@@ -213,6 +275,284 @@
                 finish('failed', 'Échec', 'Impossible de récupérer le résultat du rapprochement.');
             }
         });
+    });
+})();
+
+(function () {
+    const importForm = document.getElementById('importForm');
+    const importModalElement = document.getElementById('importModal');
+    if (!importForm || !importModalElement) return;
+
+    const importModal = new bootstrap.Modal(importModalElement, {backdrop: 'static', keyboard: false});
+    const importCloseButton = document.getElementById('importClose');
+    const importStateElement = document.getElementById('importState');
+    const importSpinner = document.getElementById('importSpinner');
+    const importResultsList = document.getElementById('importResults');
+    let importInProgress = false;
+    let importHasRun = false;
+
+    window.addEventListener('beforeunload', function (event) {
+        if (importInProgress) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
+    });
+
+    importModalElement.addEventListener('hide.bs.modal', function (event) {
+        if (importInProgress) event.preventDefault();
+    });
+
+    importCloseButton.addEventListener('click', function () {
+        if (!importInProgress && !importCloseButton.disabled) importModal.hide();
+    });
+
+    importModalElement.addEventListener('hidden.bs.modal', function () {
+        if (importHasRun) window.location.reload();
+    });
+
+    function renderImportResults(files) {
+        importResultsList.innerHTML = '';
+        files.forEach(function (file) {
+            const item = document.createElement('li');
+            item.className = 'list-group-item d-flex justify-content-between align-items-start gap-2';
+            const badgeClass = file.ok ? 'text-bg-success' : 'text-bg-danger';
+            const nameEl = document.createElement('div');
+            const titleEl = document.createElement('div');
+            titleEl.className = 'fw-semibold';
+            titleEl.textContent = file.filename || '(sans nom)';
+            const messageEl = document.createElement('div');
+            messageEl.className = 'small text-muted-debian';
+            messageEl.textContent = file.message || '';
+            nameEl.appendChild(titleEl);
+            nameEl.appendChild(messageEl);
+            const badgeEl = document.createElement('span');
+            badgeEl.className = 'badge ' + badgeClass;
+            badgeEl.textContent = file.ok ? 'Importé' : 'Échec';
+            item.appendChild(nameEl);
+            item.appendChild(badgeEl);
+            importResultsList.appendChild(item);
+        });
+    }
+
+    function finishImport(ok, files) {
+        importInProgress = false;
+        importCloseButton.disabled = false;
+        importSpinner.classList.add('d-none');
+        importStateElement.className = ok ? 'badge text-bg-success' : 'badge text-bg-danger';
+        importStateElement.textContent = ok ? 'Import terminé' : 'Import terminé avec erreurs';
+        renderImportResults(files);
+    }
+
+    importForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        if (importInProgress) return;
+
+        const fileInput = importForm.querySelector('[name=report]');
+        if (!fileInput || !fileInput.files.length) return;
+
+        importHasRun = false;
+        importInProgress = true;
+        importCloseButton.disabled = true;
+        importSpinner.classList.remove('d-none');
+        importStateElement.className = 'badge text-bg-primary';
+        importStateElement.textContent = 'En cours...';
+        importResultsList.innerHTML = '';
+        importModal.show();
+
+        try {
+            const response = await fetch(importForm.action || window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRFToken': importForm.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                body: new FormData(importForm),
+                credentials: 'same-origin',
+            });
+            const result = await response.json();
+            importHasRun = true;
+            finishImport(Boolean(response.ok && result.ok), result.files || []);
+        } catch (error) {
+            importHasRun = true;
+            finishImport(false, [{
+                filename: '',
+                ok: false,
+                message: 'Impossible de récupérer le résultat de l’import.',
+            }]);
+        }
+    });
+})();
+
+(function () {
+    const selectAllCheckbox = document.getElementById('selectAllReports');
+    const launchSelectedButton = document.getElementById('launchSelectedButton');
+    const selectedCountEl = document.getElementById('selectedCount');
+    const bulkModalElement = document.getElementById('bulkReconciliationModal');
+    if (!selectAllCheckbox || !launchSelectedButton || !bulkModalElement) return;
+
+    function reportCheckboxes() {
+        return Array.from(document.querySelectorAll('.report-checkbox'));
+    }
+
+    function updateSelectionUI() {
+        const checked = reportCheckboxes().filter(function (cb) { return cb.checked; });
+        selectedCountEl.textContent = checked.length;
+        launchSelectedButton.disabled = checked.length === 0;
+        if (!checked.length) selectAllCheckbox.checked = false;
+    }
+
+    selectAllCheckbox.addEventListener('change', function () {
+        reportCheckboxes().forEach(function (cb) { cb.checked = selectAllCheckbox.checked; });
+        updateSelectionUI();
+    });
+    reportCheckboxes().forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            if (!cb.checked) selectAllCheckbox.checked = false;
+            updateSelectionUI();
+        });
+    });
+    updateSelectionUI();
+
+    const bulkModal = new bootstrap.Modal(bulkModalElement, {backdrop: 'static', keyboard: false});
+    const bulkConfirmStep = document.getElementById('bulkConfirmStep');
+    const bulkProgressStep = document.getElementById('bulkProgressStep');
+    const bulkFileList = document.getElementById('bulkFileList');
+    const bulkResults = document.getElementById('bulkResults');
+    const bulkCancelButton = document.getElementById('bulkCancel');
+    const bulkConfirmButton = document.getElementById('bulkConfirm');
+    const bulkCloseButton = document.getElementById('bulkClose');
+    const bulkStateElement = document.getElementById('bulkState');
+    const bulkSpinner = document.getElementById('bulkSpinner');
+    let bulkInProgress = false;
+    let bulkHasRun = false;
+
+    window.addEventListener('beforeunload', function (event) {
+        if (bulkInProgress) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
+    });
+
+    bulkModalElement.addEventListener('hide.bs.modal', function (event) {
+        if (bulkInProgress) event.preventDefault();
+    });
+
+    bulkModalElement.addEventListener('hidden.bs.modal', function () {
+        if (bulkHasRun) window.location.reload();
+    });
+
+    bulkCancelButton.addEventListener('click', function () {
+        if (!bulkInProgress) bulkModal.hide();
+    });
+
+    bulkCloseButton.addEventListener('click', function () {
+        if (!bulkInProgress && !bulkCloseButton.disabled) bulkModal.hide();
+    });
+
+    launchSelectedButton.addEventListener('click', function () {
+        const filenames = reportCheckboxes().filter(function (cb) { return cb.checked; }).map(function (cb) { return cb.value; });
+        if (!filenames.length) return;
+
+        bulkHasRun = false;
+        bulkFileList.innerHTML = '';
+        filenames.forEach(function (filename) {
+            const item = document.createElement('li');
+            item.className = 'list-group-item';
+            item.textContent = filename;
+            bulkFileList.appendChild(item);
+        });
+        bulkConfirmStep.classList.remove('d-none');
+        bulkProgressStep.classList.add('d-none');
+        bulkConfirmButton.classList.remove('d-none');
+        bulkCancelButton.classList.remove('d-none');
+        bulkCloseButton.classList.add('d-none');
+        bulkModal.show();
+    });
+
+    bulkConfirmButton.addEventListener('click', async function () {
+        const filenames = Array.from(bulkFileList.querySelectorAll('li')).map(function (li) { return li.textContent; });
+        if (!filenames.length) return;
+
+        bulkInProgress = true;
+        bulkHasRun = false;
+        bulkConfirmStep.classList.add('d-none');
+        bulkProgressStep.classList.remove('d-none');
+        bulkConfirmButton.classList.add('d-none');
+        bulkCancelButton.classList.add('d-none');
+        bulkCloseButton.classList.add('d-none');
+        bulkSpinner.classList.remove('d-none');
+        bulkStateElement.className = 'badge text-bg-primary';
+        bulkStateElement.textContent = 'En cours...';
+        bulkResults.innerHTML = '';
+
+        const entries = {};
+        filenames.forEach(function (filename) {
+            const item = document.createElement('li');
+            item.className = 'list-group-item d-flex justify-content-between align-items-start gap-2';
+            const nameEl = document.createElement('div');
+            const titleEl = document.createElement('div');
+            titleEl.className = 'fw-semibold';
+            titleEl.textContent = filename;
+            const messageEl = document.createElement('div');
+            messageEl.className = 'small text-muted-debian';
+            messageEl.textContent = 'En attente...';
+            nameEl.appendChild(titleEl);
+            nameEl.appendChild(messageEl);
+            const badgeEl = document.createElement('span');
+            badgeEl.className = 'badge text-bg-secondary';
+            badgeEl.textContent = 'En attente';
+            item.appendChild(nameEl);
+            item.appendChild(badgeEl);
+            bulkResults.appendChild(item);
+            entries[filename] = {messageEl: messageEl, badgeEl: badgeEl};
+        });
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        let anyFailed = false;
+
+        for (const filename of filenames) {
+            const entry = entries[filename];
+            entry.badgeEl.className = 'badge text-bg-primary';
+            entry.badgeEl.textContent = 'En cours...';
+            entry.messageEl.textContent = 'Le serveur attend la fin du rapprochement.';
+
+            const formData = new FormData();
+            formData.append('filename', filename);
+            formData.append('csrfmiddlewaretoken', csrfToken);
+
+            try {
+                const response = await fetch('{% url "om:launch_reconciliation" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRFToken': csrfToken,
+                    },
+                    body: formData,
+                    credentials: 'same-origin',
+                });
+                const result = await response.json();
+                const ok = response.ok && result.ok;
+                if (!ok) anyFailed = true;
+                entry.badgeEl.className = ok ? 'badge text-bg-success' : 'badge text-bg-danger';
+                entry.badgeEl.textContent = result.label || (ok ? 'Terminé' : 'Échec');
+                entry.messageEl.textContent = [result.message, result.process_id ? 'Processus #' + result.process_id : '']
+                    .filter(Boolean)
+                    .join(' · ');
+            } catch (error) {
+                anyFailed = true;
+                entry.badgeEl.className = 'badge text-bg-danger';
+                entry.badgeEl.textContent = 'Échec';
+                entry.messageEl.textContent = 'Impossible de récupérer le résultat du rapprochement.';
+            }
+        }
+
+        bulkInProgress = false;
+        bulkHasRun = true;
+        bulkSpinner.classList.add('d-none');
+        bulkStateElement.className = anyFailed ? 'badge text-bg-danger' : 'badge text-bg-success';
+        bulkStateElement.textContent = anyFailed ? 'Rapprochements terminés avec erreurs' : 'Rapprochements terminés';
+        bulkCloseButton.classList.remove('d-none');
+        bulkCloseButton.disabled = false;
     });
 })();
 </script>

@@ -26,6 +26,68 @@ EXPECTED_COLUMNS = (
 FILENAME_PATTERN = re.compile(r'\A\d{4}-\d{2}-\d{2}_reporting_PAMF\.csv\Z')
 
 
+def validate_report(uploaded):
+    """Validates the filename, size and CSV structure of one uploaded MVOLA report.
+    Returns (row_count, completed_count, content), or raises forms.ValidationError.
+    Shared by the single-file Django form below (clean_report) and the manual
+    multi-file loop in mvola/views.py::import_report."""
+    filename = uploaded.name or ''
+    if '/' in filename or '\\' in filename or not FILENAME_PATTERN.fullmatch(filename):
+        raise forms.ValidationError(
+            'Le nom doit respecter le format YYYY-MM-DD_reporting_PAMF.csv, sans chemin.'
+        )
+    try:
+        datetime.strptime(filename[:10], '%Y-%m-%d')
+    except ValueError as exc:
+        raise forms.ValidationError('La date du nom de fichier est invalide.') from exc
+
+    if uploaded.size == 0:
+        raise forms.ValidationError('Le fichier est vide.')
+    if uploaded.size > settings.MVOLA_MAX_UPLOAD_SIZE:
+        max_mib = settings.MVOLA_MAX_UPLOAD_SIZE // (1024 * 1024)
+        raise forms.ValidationError(f'Le fichier dépasse la limite de {max_mib} Mio.')
+
+    try:
+        content = uploaded.read()
+        text = content.decode('utf-8-sig')
+        if '\x00' in text:
+            raise forms.ValidationError('Le fichier contient des données invalides.')
+        reader = csv.reader(io.StringIO(text, newline=''), delimiter=';', strict=True)
+        headers = next(reader, None)
+        if headers != list(EXPECTED_COLUMNS):
+            raise forms.ValidationError(
+                'Les colonnes du CSV ne correspondent pas au format de rapport MVOLA attendu.'
+            )
+
+        row_count = 0
+        completed_count = 0
+        for row in reader:
+            if not row or all(not value.strip() for value in row):
+                continue
+            if len(row) != len(EXPECTED_COLUMNS):
+                raise forms.ValidationError(
+                    f'Ligne CSV {reader.line_num}: nombre de colonnes incorrect.'
+                )
+            row_count += 1
+            if row[2] == 'Completed':
+                if not row[1].strip():
+                    raise forms.ValidationError(
+                        f'Ligne CSV {reader.line_num}: TRANSID_MVOLA est obligatoire pour une transaction Completed.'
+                    )
+                completed_count += 1
+    except UnicodeDecodeError as exc:
+        raise forms.ValidationError('Le CSV doit être encodé en UTF-8.') from exc
+    except csv.Error as exc:
+        raise forms.ValidationError(f'CSV illisible: {exc}') from exc
+
+    if row_count == 0:
+        raise forms.ValidationError('Le rapport ne contient aucune ligne de données.')
+    if completed_count == 0:
+        raise forms.ValidationError('Le rapport ne contient aucune transaction Completed.')
+
+    return row_count, completed_count, content
+
+
 class MvolaReportUploadForm(forms.Form):
     report = forms.FileField(label='Rapport MVOLA au format CSV')
 
@@ -34,69 +96,14 @@ class MvolaReportUploadForm(forms.Form):
         self.fields['report'].widget.attrs.update({
             'class': 'form-control',
             'accept': '.csv,text/csv',
+            'multiple': True,
         })
         self.row_count = 0
 
     def clean_report(self):
         uploaded = self.cleaned_data['report']
-        filename = uploaded.name or ''
-        if '/' in filename or '\\' in filename or not FILENAME_PATTERN.fullmatch(filename):
-            raise forms.ValidationError(
-                'Le nom doit respecter le format YYYY-MM-DD_reporting_PAMF.csv, sans chemin.'
-            )
-        try:
-            datetime.strptime(filename[:10], '%Y-%m-%d')
-        except ValueError as exc:
-            raise forms.ValidationError('La date du nom de fichier est invalide.') from exc
-
-        if uploaded.size == 0:
-            raise forms.ValidationError('Le fichier est vide.')
-        if uploaded.size > settings.MVOLA_MAX_UPLOAD_SIZE:
-            max_mib = settings.MVOLA_MAX_UPLOAD_SIZE // (1024 * 1024)
-            raise forms.ValidationError(f'Le fichier dépasse la limite de {max_mib} Mio.')
-
-        try:
-            content = uploaded.read()
-            text = content.decode('utf-8-sig')
-            if '\x00' in text:
-                raise forms.ValidationError('Le fichier contient des données invalides.')
-            reader = csv.reader(io.StringIO(text, newline=''), delimiter=';', strict=True)
-            headers = next(reader, None)
-            if headers != list(EXPECTED_COLUMNS):
-                raise forms.ValidationError(
-                    'Les colonnes du CSV ne correspondent pas au format de rapport MVOLA attendu.'
-                )
-
-            row_count = 0
-            completed_count = 0
-            for row in reader:
-                if not row or all(not value.strip() for value in row):
-                    continue
-                if len(row) != len(EXPECTED_COLUMNS):
-                    raise forms.ValidationError(
-                        f'Ligne CSV {reader.line_num}: nombre de colonnes incorrect.'
-                    )
-                row_count += 1
-                if row[2] == 'Completed':
-                    if not row[1].strip():
-                        raise forms.ValidationError(
-                            f'Ligne CSV {reader.line_num}: TRANSID_MVOLA est obligatoire pour une transaction Completed.'
-                        )
-                    completed_count += 1
-        except UnicodeDecodeError as exc:
-            raise forms.ValidationError('Le CSV doit être encodé en UTF-8.') from exc
-        except csv.Error as exc:
-            raise forms.ValidationError(f'CSV illisible: {exc}') from exc
-
-        if row_count == 0:
-            raise forms.ValidationError('Le rapport ne contient aucune ligne de données.')
-        if completed_count == 0:
-            raise forms.ValidationError('Le rapport ne contient aucune transaction Completed.')
-
+        self.row_count, self.completed_count, self.content = validate_report(uploaded)
         uploaded.seek(0)
-        self.row_count = row_count
-        self.completed_count = completed_count
-        self.content = content
         return uploaded
 
 

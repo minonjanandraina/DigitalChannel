@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.http import Http404, HttpResponse, HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -24,6 +25,7 @@ from .forms import (
     ReconciliationDetailFilterForm,
     ReconciliationHistoryFilterForm,
     parse_transaction_date,
+    validate_report,
 )
 from .models import (
     InteropOmCbs,
@@ -65,6 +67,50 @@ def _import_context(request, form):
 @login_required
 @permission_required('auth.import_om_report', raise_exception=True)
 def import_report(request):
+    wants_json = 'application/json' in request.headers.get('Accept', '')
+    uploaded_files = request.FILES.getlist('report') if request.method == 'POST' else []
+
+    if request.method == 'POST' and len(uploaded_files) > 1:
+        results = []
+        any_failed = False
+        for uploaded in uploaded_files:
+            filename = uploaded.name or ''
+            try:
+                row_count, completed_count, content = validate_report(uploaded)
+            except ValidationError as exc:
+                any_failed = True
+                results.append({'filename': filename, 'ok': False, 'message': ' '.join(exc.messages)})
+                continue
+            try:
+                store_report(filename, content)
+            except ReportAlreadyExists:
+                any_failed = True
+                results.append({
+                    'filename': filename, 'ok': False,
+                    'message': 'Un rapport portant ce nom existe déjà; il n’a pas été remplacé.',
+                })
+            except OSError:
+                any_failed = True
+                results.append({
+                    'filename': filename, 'ok': False,
+                    'message': "Le rapport n'a pas pu être enregistré. Vérifiez le dossier de stockage.",
+                })
+            else:
+                results.append({
+                    'filename': filename, 'ok': True,
+                    'message': f'{row_count} lignes, {completed_count} transactions Succès.',
+                })
+
+        if wants_json:
+            return JsonResponse({'ok': not any_failed, 'files': results})
+
+        for result in results:
+            if result['ok']:
+                messages.success(request, f"{result['filename']} importé: {result['message']}")
+            else:
+                messages.error(request, f"{result['filename']}: {result['message']}")
+        return redirect('om:import')
+
     form = OmReportUploadForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
         uploaded = form.cleaned_data['report']
@@ -75,12 +121,26 @@ def import_report(request):
         except OSError:
             form.add_error(None, "Le rapport n'a pas pu être enregistré. Vérifiez le dossier de stockage.")
         else:
-            messages.success(
-                request,
-                f'{uploaded.name} importé: {form.row_count} lignes, '
-                f'{form.completed_count} transactions Succès.',
-            )
+            message = f'{form.row_count} lignes, {form.completed_count} transactions Succès.'
+            if wants_json:
+                return JsonResponse({
+                    'ok': True,
+                    'files': [{'filename': uploaded.name, 'ok': True, 'message': message}],
+                })
+            messages.success(request, f'{uploaded.name} importé: {message}')
             return redirect('om:import')
+
+    if request.method == 'POST' and wants_json:
+        filename = uploaded_files[0].name if uploaded_files else ''
+        error_messages = [msg for errors in form.errors.values() for msg in errors]
+        return JsonResponse({
+            'ok': False,
+            'files': [{
+                'filename': filename,
+                'ok': False,
+                'message': ' '.join(error_messages) or 'Le rapport est invalide.',
+            }],
+        }, status=400)
 
     return render(request, 'om/import.html', _import_context(request, form))
 

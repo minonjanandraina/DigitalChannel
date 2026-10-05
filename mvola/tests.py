@@ -177,6 +177,68 @@ class MvolaReportImportTests(TestCase):
         self.assertContains(response, 'dépasse la limite')
         self.assertEqual(list(Path(self.temp_dir.name).iterdir()), [])
 
+    def test_multiple_valid_files_are_all_stored_and_reported(self):
+        self.login_with_role('Backoffice')
+
+        response = self.client.post(self.url, {
+            'report': [
+                SimpleUploadedFile(
+                    '2026-09-22_reporting_PAMF.csv', valid_report_bytes(), content_type='text/csv',
+                ),
+                SimpleUploadedFile(
+                    '2026-09-23_reporting_PAMF.csv', valid_report_bytes(), content_type='text/csv',
+                ),
+            ],
+        })
+
+        self.assertRedirects(response, self.url, fetch_redirect_response=False)
+        self.assertTrue(Path(self.temp_dir.name, '2026-09-22_reporting_PAMF.csv').exists())
+        self.assertTrue(Path(self.temp_dir.name, '2026-09-23_reporting_PAMF.csv').exists())
+
+    def test_multiple_files_one_invalid_reports_per_file_result_and_keeps_valid_one(self):
+        self.login_with_role('Backoffice')
+
+        response = self.client.post(self.url, {
+            'report': [
+                SimpleUploadedFile(
+                    '2026-09-22_reporting_PAMF.csv', valid_report_bytes(), content_type='text/csv',
+                ),
+                SimpleUploadedFile(
+                    '2026-09-23_report.csv', valid_report_bytes(), content_type='text/csv',
+                ),
+            ],
+        })
+
+        self.assertRedirects(response, self.url, fetch_redirect_response=False)
+        self.assertTrue(Path(self.temp_dir.name, '2026-09-22_reporting_PAMF.csv').exists())
+        self.assertFalse(Path(self.temp_dir.name, '2026-09-23_report.csv').exists())
+        page = self.client.get(self.url)
+        self.assertContains(page, '2026-09-22_reporting_PAMF.csv importé')
+        self.assertContains(page, 'sans chemin')
+
+    def test_multiple_files_ajax_response_lists_each_file_result(self):
+        self.login_with_role('Backoffice')
+
+        response = self.client.post(self.url, {
+            'report': [
+                SimpleUploadedFile(
+                    '2026-09-22_reporting_PAMF.csv', valid_report_bytes(), content_type='text/csv',
+                ),
+                SimpleUploadedFile(
+                    '2026-09-23_report.csv', valid_report_bytes(), content_type='text/csv',
+                ),
+            ],
+        }, HTTP_ACCEPT='application/json')
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertFalse(payload['ok'])
+        self.assertEqual(len(payload['files']), 2)
+        self.assertTrue(payload['files'][0]['ok'])
+        self.assertEqual(payload['files'][0]['filename'], '2026-09-22_reporting_PAMF.csv')
+        self.assertFalse(payload['files'][1]['ok'])
+        self.assertIn('sans chemin', payload['files'][1]['message'])
+
 
 class ReconciliationLaunchTests(TestCase):
     def setUp(self):

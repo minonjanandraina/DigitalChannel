@@ -28,6 +28,48 @@ def parse_transaction_date(filename):
     return datetime.strptime(filename[46:54], '%Y%m%d').date()
 
 
+def validate_report(uploaded):
+    """Validates the filename, size and sheet structure of one uploaded OM report.
+    Returns (row_count, completed_count, content), or raises forms.ValidationError.
+    Shared by the single-file Django form below (clean_report) and the manual
+    multi-file loop in om/views.py::import_report."""
+    filename = uploaded.name or ''
+    if '/' in filename or '\\' in filename or not FILENAME_PATTERN.fullmatch(filename):
+        raise forms.ValidationError(
+            'Le nom doit respecter le format '
+            'Daily-ChannelUserTransactionReport-0324660679-YYYYMMDD.xls, sans chemin.'
+        )
+    try:
+        parse_transaction_date(filename)
+    except ValueError as exc:
+        raise forms.ValidationError('La date du nom de fichier est invalide.') from exc
+
+    if uploaded.size == 0:
+        raise forms.ValidationError('Le fichier est vide.')
+    if uploaded.size > settings.OM_MAX_UPLOAD_SIZE:
+        max_mib = settings.OM_MAX_UPLOAD_SIZE // (1024 * 1024)
+        raise forms.ValidationError(f'Le fichier dépasse la limite de {max_mib} Mio.')
+
+    content = uploaded.read()
+    try:
+        dataframe = pd.read_excel(io.BytesIO(content), names=OM_COLUMNS, engine='xlrd')
+    except Exception as exc:
+        raise forms.ValidationError(
+            "Le fichier n'est pas un rapport Orange Money .xls lisible."
+        ) from exc
+
+    status_column = dataframe['status'].astype(str).str.strip()
+    row_count = int(status_column.isin(['Succès', 'Echec']).sum())
+    completed_count = int((status_column == 'Succès').sum())
+
+    if row_count == 0:
+        raise forms.ValidationError('Le rapport ne contient aucune ligne de transaction reconnaissable.')
+    if completed_count == 0:
+        raise forms.ValidationError('Le rapport ne contient aucune transaction Succès.')
+
+    return row_count, completed_count, content
+
+
 class OmReportUploadForm(forms.Form):
     report = forms.FileField(label='Rapport Orange Money au format XLS')
 
@@ -36,50 +78,15 @@ class OmReportUploadForm(forms.Form):
         self.fields['report'].widget.attrs.update({
             'class': 'form-control',
             'accept': '.xls',
+            'multiple': True,
         })
         self.row_count = 0
         self.completed_count = 0
 
     def clean_report(self):
         uploaded = self.cleaned_data['report']
-        filename = uploaded.name or ''
-        if '/' in filename or '\\' in filename or not FILENAME_PATTERN.fullmatch(filename):
-            raise forms.ValidationError(
-                'Le nom doit respecter le format '
-                'Daily-ChannelUserTransactionReport-0324660679-YYYYMMDD.xls, sans chemin.'
-            )
-        try:
-            parse_transaction_date(filename)
-        except ValueError as exc:
-            raise forms.ValidationError('La date du nom de fichier est invalide.') from exc
-
-        if uploaded.size == 0:
-            raise forms.ValidationError('Le fichier est vide.')
-        if uploaded.size > settings.OM_MAX_UPLOAD_SIZE:
-            max_mib = settings.OM_MAX_UPLOAD_SIZE // (1024 * 1024)
-            raise forms.ValidationError(f'Le fichier dépasse la limite de {max_mib} Mio.')
-
-        content = uploaded.read()
-        try:
-            dataframe = pd.read_excel(io.BytesIO(content), names=OM_COLUMNS, engine='xlrd')
-        except Exception as exc:
-            raise forms.ValidationError(
-                "Le fichier n'est pas un rapport Orange Money .xls lisible."
-            ) from exc
-
-        status_column = dataframe['status'].astype(str).str.strip()
-        row_count = int(status_column.isin(['Succès', 'Echec']).sum())
-        completed_count = int((status_column == 'Succès').sum())
-
-        if row_count == 0:
-            raise forms.ValidationError('Le rapport ne contient aucune ligne de transaction reconnaissable.')
-        if completed_count == 0:
-            raise forms.ValidationError('Le rapport ne contient aucune transaction Succès.')
-
+        self.row_count, self.completed_count, self.content = validate_report(uploaded)
         uploaded.seek(0)
-        self.row_count = row_count
-        self.completed_count = completed_count
-        self.content = content
         return uploaded
 
 

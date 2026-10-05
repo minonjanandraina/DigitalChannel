@@ -214,6 +214,54 @@ class OmReportImportTests(TestCase):
         self.assertContains(response, 'dépasse la limite')
         self.assertEqual(list(Path(self.temp_dir.name).iterdir()), [])
 
+    def test_multiple_valid_files_are_all_stored_and_reported(self):
+        self.login_with_role('Backoffice')
+
+        response = self.client.post(self.url, {
+            'report': [
+                SimpleUploadedFile(
+                    'Daily-ChannelUserTransactionReport-0324660679-20260912.xls',
+                    valid_om_report_bytes(), content_type='application/vnd.ms-excel',
+                ),
+                SimpleUploadedFile(
+                    'Daily-ChannelUserTransactionReport-0324660679-20260913.xls',
+                    valid_om_report_bytes(), content_type='application/vnd.ms-excel',
+                ),
+            ],
+        })
+
+        self.assertRedirects(response, self.url, fetch_redirect_response=False)
+        self.assertTrue(
+            Path(self.temp_dir.name, 'Daily-ChannelUserTransactionReport-0324660679-20260912.xls').exists()
+        )
+        self.assertTrue(
+            Path(self.temp_dir.name, 'Daily-ChannelUserTransactionReport-0324660679-20260913.xls').exists()
+        )
+
+    def test_multiple_files_ajax_response_lists_each_file_result(self):
+        self.login_with_role('Backoffice')
+
+        response = self.client.post(self.url, {
+            'report': [
+                SimpleUploadedFile(
+                    'Daily-ChannelUserTransactionReport-0324660679-20260912.xls',
+                    valid_om_report_bytes(), content_type='application/vnd.ms-excel',
+                ),
+                SimpleUploadedFile(
+                    'Daily-ChannelUserTransactionReport-0324660679-20260912.xlsx',
+                    valid_om_report_bytes(), content_type='application/vnd.ms-excel',
+                ),
+            ],
+        }, HTTP_ACCEPT='application/json')
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertFalse(payload['ok'])
+        self.assertEqual(len(payload['files']), 2)
+        self.assertTrue(payload['files'][0]['ok'])
+        self.assertFalse(payload['files'][1]['ok'])
+        self.assertIn('sans chemin', payload['files'][1]['message'])
+
 
 class ReconciliationLaunchTests(TestCase):
     """Uses schema_editor to create tables for the unmanaged interop_om_*
