@@ -58,6 +58,12 @@
     </div>
 </form>
 {% endif %}
+{% if perms.auth.view_reconciliation_results %}
+<hr>
+<div hx-get="{% url 'replay:panel' 'om' row.id %}" hx-trigger="load" hx-swap="outerHTML">
+    <p class="text-muted-debian mb-0">Chargement…</p>
+</div>
+{% endif %}
 
 <hr>
 <h3 class="h6">Historique des actions</h3>

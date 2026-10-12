@@ -1,14 +1,17 @@
 # CLAUDE.md
-this file is for mvola app, 
-please check CLAUDE_OM.md for the app om
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+Ce fichier couvre l'app `mvola`. Pour l'app `om`, voir `CLAUDE_OM.md`.
 
 L'app `om` (rapprochement WTB Orange Money) est un calque quasi exact de `mvola`: mêmes patterns de vues,
 templates, stockage, historique/détail, et même principe de tables externes `interop_om_*` écrites uniquement
 par `service_om.py`. Avant de modifier un fichier `mvola/*`, vérifier si `om/*` a un équivalent à faire évoluer
 en parallèle (et inversement), et voir `CLAUDE_OM.md` pour les écarts connus entre les deux (ex: `service_om.reconciliation()` ne renvoie pas `process_id`, contourné par `om/views.py::_recover_process_id()`).
 
-## je t'interdi de toucher à cette fichier: service_mvola.py, service_om.py
+## Interdit: ne jamais modifier `service_mvola.py` ni `service_om.py`
+
+Si un changement semble nécessiter une modification de ces services, le contourner côté vues/`results_repository.py` ou le signaler à l'utilisateur.
 
 ## Commandes courantes
 

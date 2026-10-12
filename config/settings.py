@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
     'mvola.apps.MvolaConfig',
     'om.apps.OmConfig',
+    'replay.apps.ReplayConfig',
 ]
 
 MIDDLEWARE = [
@@ -198,3 +199,9 @@ LOGOUT_REDIRECT_URL = "accounts:login"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Rejeu de transactions orphelines (endpoint maker/checker). La clé API vient uniquement de l'environnement.
+REPLAY_API_BASE_URL = os.getenv("REPLAY_API_BASE_URL", "http://172.20.23.13:8087/RejoutTransaction/api").strip()
+REPLAY_API_KEY = os.getenv("REPLAY_API_KEY", "").strip()
+REPLAY_API_TIMEOUT = int(os.getenv("REPLAY_API_TIMEOUT", "30"))

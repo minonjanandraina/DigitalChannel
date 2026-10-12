@@ -10,6 +10,8 @@ CAPABILITY_NAMES = {
     'run_mvola_reconciliation': 'Can run MVOLA reconciliation',
     'import_om_report': 'Can import Orange Money reports',
     'run_om_reconciliation': 'Can run Orange Money reconciliation',
+    'replay_transaction_maker': 'Can submit transaction replays as maker',
+    'replay_transaction_checker': 'Can validate transaction replays as checker',
     'manage_mvola_users': 'Can manage DigitalChannel users and roles',
 }
 
@@ -25,6 +27,7 @@ ROLE_CAPABILITIES = {
         'run_mvola_reconciliation',
         'import_om_report',
         'run_om_reconciliation',
+        'replay_transaction_maker',
     },
     'Admin': set(CAPABILITY_NAMES),
 }

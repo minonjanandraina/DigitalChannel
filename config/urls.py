@@ -21,5 +21,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('mvola/', include('mvola.urls')),
     path('om/', include('om.urls')),
+    path('replay/', include('replay.urls')),
     path('', include('accounts.urls')),
 ]

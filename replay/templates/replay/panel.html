@@ -1,0 +1,52 @@
+<div id="replayPanel-{{ source }}-{{ row.id }}">
+    <h3 class="h6">Rejouer la transaction</h3>
+
+    {% if message %}
+    <div class="alert {% if success %}alert-success{% else %}alert-danger{% endif %} py-2" role="alert">{{ message }}</div>
+    {% endif %}
+
+    <p class="small mb-2">
+        RequestId : <strong>{{ request_id|default:'-' }}</strong> · Montant : <strong>{{ amount|default:'-' }}</strong>
+    </p>
+
+    {% if latest %}
+    <p class="mb-2">
+        <span class="badge {% if latest.status == 'completed' %}text-bg-success{% elif latest.status == 'pending_checker' %}text-bg-primary{% else %}text-bg-danger{% endif %}">{{ latest.get_status_display }}</span>
+        <span class="small text-muted-debian">Maker : {{ latest.maker.email|default:latest.maker.username }}{% if latest.checker %} · Checker : {{ latest.checker.email|default:latest.checker.username }}{% endif %}</span>
+    </p>
+    {% endif %}
+
+    {% if can_make %}
+    <form hx-post="{% url 'replay:maker' source row.id %}" hx-target="#replayPanel-{{ source }}-{{ row.id }}" hx-swap="outerHTML"
+          hx-confirm="Soumettre le rejeu de la transaction {{ request_id }} (montant {{ amount }}) ?">
+        {% csrf_token %}
+        <button class="btn btn-debian" type="submit"{% if not request_id or not amount %} disabled{% endif %}>Rejouer (maker)</button>
+    </form>
+    {% endif %}
+
+    {% if can_check %}
+    <form hx-post="{% url 'replay:checker' source row.id %}" hx-target="#replayPanel-{{ source }}-{{ row.id }}" hx-swap="outerHTML"
+          hx-confirm="Valider le rejeu de la transaction {{ request_id }} ? Elle sera traitée par l'endpoint.">
+        {% csrf_token %}
+        <button class="btn btn-debian" type="submit">Valider le rejeu (checker)</button>
+    </form>
+    {% elif latest and latest.status == 'pending_checker' %}
+    <p class="small text-muted-debian mb-0">En attente de validation par un checker différent du maker.</p>
+    {% endif %}
+
+    {% if replays %}
+    <details class="mt-3">
+        <summary class="small">Journal des envois</summary>
+        <ul class="list-group mt-2">
+            {% for replay in replays %}{% for log in replay.logs.all %}
+            <li class="list-group-item small">
+                <span class="badge {% if log.success %}text-bg-success{% else %}text-bg-danger{% endif %}">{{ log.get_role_display }}</span>
+                {{ log.user_mail }} · {{ log.sent_at|date:'d/m/Y H:i:s' }} · HTTP {{ log.http_status|default:'-' }}
+                {% if log.error %}<div class="text-danger">{{ log.error }}</div>{% endif %}
+                {% if log.response_body %}<pre class="mb-0 text-wrap">{{ log.response_body }}</pre>{% endif %}
+            </li>
+            {% endfor %}{% endfor %}
+        </ul>
+    </details>
+    {% endif %}
+</div>
