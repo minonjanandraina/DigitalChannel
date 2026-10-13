@@ -24,6 +24,10 @@
             <a class="sidebar-link sidebar-sublink {% if request.resolver_match.app_name == 'mvola' and request.resolver_match.url_name == 'reconciliation_history' or request.resolver_match.app_name == 'mvola' and request.resolver_match.url_name == 'reconciliation_detail' %}active{% endif %}"
                href="{% url 'mvola:reconciliation_history' %}">Historique des rapprochements</a>
         {% endif %}
+        {% if perms.auth.view_reconciliation_results %}
+            <a class="sidebar-link sidebar-sublink {% if request.resolver_match.app_name == 'reports' and request.resolver_match.kwargs.module == 'mvola' %}active{% endif %}"
+               href="{% url 'reports:report' 'mvola' %}">Rapports</a>
+        {% endif %}
     </div>
 {% endif %}
 
@@ -44,6 +48,10 @@
         {% if perms.auth.view_reconciliation_results %}
             <a class="sidebar-link sidebar-sublink {% if request.resolver_match.app_name == 'om' and request.resolver_match.url_name == 'reconciliation_history' or request.resolver_match.app_name == 'om' and request.resolver_match.url_name == 'reconciliation_detail' %}active{% endif %}"
                href="{% url 'om:reconciliation_history' %}">Historique des rapprochements</a>
+        {% endif %}
+        {% if perms.auth.view_reconciliation_results %}
+            <a class="sidebar-link sidebar-sublink {% if request.resolver_match.app_name == 'reports' and request.resolver_match.kwargs.module == 'om' %}active{% endif %}"
+               href="{% url 'reports:report' 'om' %}">Rapports</a>
         {% endif %}
     </div>
 {% endif %}

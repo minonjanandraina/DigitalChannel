@@ -1,0 +1,56 @@
+{% extends "accounts/base.html" %}
+{% block title %}Rapports {{ module_label }} | PAMF{% endblock %}
+{% block content %}
+<section>
+    <p class="small text-muted-debian mb-2">{{ module_label|upper }}</p>
+    <h1 class="h3 mb-4">Rapports</h1>
+
+    <form method="get" action="{% url 'reports:report' module %}" class="row g-2 align-items-end mb-4">
+        {% for error in form.non_field_errors %}<div class="col-12 text-danger small">{{ error }}</div>{% endfor %}
+        {% for field in form %}
+        <div class="col-6 col-lg-3">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        {% endfor %}
+        <div class="col-12 col-lg-3 d-flex gap-2">
+            <button class="btn btn-debian" type="submit">Générer</button>
+            <a class="btn btn-outline-secondary" href="{% url 'reports:report' module %}">Réinitialiser</a>
+        </div>
+    </form>
+
+    {% if searched %}
+    <div class="d-flex justify-content-between align-items-center">
+        <p class="small text-muted-debian mb-0">{{ total }} ligne(s)</p>
+        {% if total %}<a class="btn btn-outline-secondary btn-sm" href="{% url 'reports:export' module %}?{{ query }}">Exporter (CSV)</a>{% endif %}
+    </div>
+    {% if rows %}
+    <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle">
+            <thead><tr>{% for key, label in columns %}<th>{{ label }}</th>{% endfor %}</tr></thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>{% for value in row %}<td>{{ value|default:'-' }}</td>{% endfor %}</tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted-debian">Aucune ligne ne correspond à ces filtres.</p>
+    {% endif %}
+
+    {% if total_pages > 1 %}
+    <nav class="d-flex justify-content-between align-items-center mt-3" aria-label="Pagination du rapport">
+        <span class="small text-muted-debian">Page {{ page }} / {{ total_pages }}</span>
+        <div class="d-flex gap-2">
+            {% if has_previous %}<a class="btn btn-outline-secondary btn-sm" href="?{{ query }}&amp;page={{ previous_page }}">Précédent</a>{% endif %}
+            {% if has_next %}<a class="btn btn-outline-secondary btn-sm" href="?{{ query }}&amp;page={{ next_page }}">Suivant</a>{% endif %}
+        </div>
+    </nav>
+    {% endif %}
+    {% else %}
+    <p class="text-muted-debian">Choisissez vos filtres (tous optionnels) puis cliquez sur « Générer ».</p>
+    {% endif %}
+</section>
+{% endblock %}

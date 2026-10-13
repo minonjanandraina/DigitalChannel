@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'mvola.apps.MvolaConfig',
     'om.apps.OmConfig',
     'replay.apps.ReplayConfig',
+    'reports.apps.ReportsConfig',
 ]
 
 MIDDLEWARE = [
