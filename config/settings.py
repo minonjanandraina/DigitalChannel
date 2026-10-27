@@ -177,7 +177,7 @@ EMAIL_BACKEND = os.getenv(
     if EMAIL_HOST
     else "django.core.mail.backends.console.EmailBackend",
 )
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@pamf.mg")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@pamf.mg")
 EMAIL_CONFIRMATION_MAX_AGE = int(os.getenv("EMAIL_CONFIRMATION_MAX_AGE", "86400"))
 DEFAULT_SIGNUP_ROLE = os.getenv(
     "DEFAULT_SIGNUP_ROLE",
